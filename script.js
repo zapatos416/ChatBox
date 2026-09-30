@@ -1,11 +1,12 @@
 // ==================================================
-// CONFIGURACIÓN OFICIAL MODULAR DE FIREBASE
+// IMPORTACIONES DE FIREBASE MODULAR (POR CDN)
 // ==================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
   getFirestore, 
   collection, 
   doc, 
+  getDoc,
   setDoc, 
   addDoc, 
   onSnapshot, 
@@ -13,8 +14,17 @@ import {
   orderBy, 
   serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import {
+  getAuth,
+  signInWithPopup,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
-const firebaseConfig = {
+// Credenciales oficiales de tu proyecto en Firebase
+const configuracionFirebase = {
   apiKey: "AIzaSyAHyOtOWEDC75bVYHyqPmpauNOiCjueltA",
   authDomain: "chatblox-561f3.firebaseapp.com",
   projectId: "chatblox-561f3",
@@ -24,228 +34,361 @@ const firebaseConfig = {
   measurementId: "G-9XSJF699P3"
 };
 
-// Inicializar la conexión
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+// Inicialización de la aplicación y servicios
+const app = initializeApp(configuracionFirebase);
+const baseDatos = getFirestore(app);
+const autenticacion = getAuth(app);
+
+// Forzar idioma en español
+autenticacion.languageCode = "es";
+
+const proveedorGoogle = new GoogleAuthProvider();
+const proveedorFacebook = new FacebookAuthProvider();
 
 // ==================================================
-// ESTADO LOCAL DE LA APLICACIÓN
+// ESTADO GLOBAL DE LA APLICACIÓN
 // ==================================================
-let rooms = [];
-const currentUser = "Usuario_" + Math.floor(100 + Math.random() * 900);
-let currentRoomId = null;
-let selectedModalRoom = null;
-let currentFilter = "all";
-let unsubscribeMessages = null;
+let usuarioActualAuth = null;
+let perfilActual = null;
+let listaSalas = [];
+let idSalaActual = null;
+let salaSeleccionadaModal = null;
+let filtroCategoriaActual = "all";
+let cancelarEscuchaMensajes = null;
 
 // Elementos del DOM
-const catalogView = document.getElementById("catalogView");
-const chatView = document.getElementById("chatView");
-const roomsGrid = document.getElementById("roomsGrid");
-const searchInput = document.getElementById("searchInput");
-const filterBtns = document.querySelectorAll(".filter-btn");
+const vistaCatalogo = document.getElementById("catalogView");
+const vistaChat = document.getElementById("chatView");
+const contenedorSalas = document.getElementById("roomsGrid");
+const barraBusqueda = document.getElementById("searchInput");
+const botonesFiltro = document.querySelectorAll(".filter-btn");
 
-const modalDetails = document.getElementById("modalDetails");
-const modalPrivateJoin = document.getElementById("modalPrivateJoin");
-const modalCreateRoom = document.getElementById("modalCreateRoom");
+const botonAbrirAuth = document.getElementById("btnOpenAuth");
+const tarjetaPerfilUsuario = document.getElementById("userProfileChip");
+const avatarNavegacion = document.getElementById("navAvatar");
+const nombreUsuarioNavegacion = document.getElementById("navUsername");
+const botonCerrarSesion = document.getElementById("btnLogout");
 
-const messagesArea = document.getElementById("messagesArea");
-const chatInput = document.getElementById("chatInput");
-const btnSendMessage = document.getElementById("btnSendMessage");
-const btnLeaveRoom = document.getElementById("btnLeaveRoom");
-const chatRoomTitle = document.getElementById("chatRoomTitle");
-const chatRoomImg = document.getElementById("chatRoomImg");
-const participantsList = document.getElementById("participantsList");
-const userCount = document.getElementById("userCount");
+const modalAutenticacion = document.getElementById("modalAuth");
+const modalAsignarNombre = document.getElementById("modalSetUsername");
+const formularioAsignarNombre = document.getElementById("formSetUsername");
+const campoNombreUsuario = document.getElementById("customUsernameInput");
+const botonIngresoGoogle = document.getElementById("btnLoginGoogle");
+const botonIngresoFacebook = document.getElementById("btnLoginFacebook");
+const textoErrorAuth = document.getElementById("authErrorMsg");
+
+const modalDetallesSala = document.getElementById("modalDetails");
+const modalUnirsePrivada = document.getElementById("modalPrivateJoin");
+const modalCrearSala = document.getElementById("modalCreateRoom");
+
+const areaMensajes = document.getElementById("messagesArea");
+const campoTextoMensaje = document.getElementById("chatInput");
+const botonEnviarMensaje = document.getElementById("btnSendMessage");
+const botonSalirSala = document.getElementById("btnLeaveRoom");
+const tituloSalaChat = document.getElementById("chatRoomTitle");
+const imagenSalaChat = document.getElementById("chatRoomImg");
+const listaParticipantes = document.getElementById("participantsList");
 
 // ==================================================
-// ESCUCHA EN TIEMPO REAL DEL CATÁLOGO DE SALAS
+// CONTROL DE SESIÓN Y APODO EN FIRESTORE
 // ==================================================
-const roomsCollectionRef = collection(db, "salas");
+onAuthStateChanged(autenticacion, async (usuario) => {
+  usuarioActualAuth = usuario;
 
-onSnapshot(roomsCollectionRef, (snapshot) => {
-  rooms = [];
-  snapshot.forEach((documentSnap) => {
-    rooms.push({ id: documentSnap.id, ...documentSnap.data() });
+  if (usuario) {
+    botonAbrirAuth.classList.add("hidden");
+    tarjetaPerfilUsuario.classList.remove("hidden");
+
+    // Revisar si ya existe el perfil en la colección "usuarios"
+    const refDocUsuario = doc(baseDatos, "usuarios", usuario.uid);
+    const snapUsuario = await getDoc(refDocUsuario);
+
+    if (snapUsuario.exists() && snapUsuario.data().nombreUsuario) {
+      perfilActual = snapUsuario.data();
+      actualizarInterfazUsuario(perfilActual);
+    } else {
+      // Sugerir nombre y abrir modal de apodo
+      campoNombreUsuario.value = (usuario.displayName || "Usuario").replace(/\s+/g, "_");
+      modalAsignarNombre.classList.remove("hidden");
+    }
+  } else {
+    perfilActual = null;
+    tarjetaPerfilUsuario.classList.add("hidden");
+    botonAbrirAuth.classList.remove("hidden");
+  }
+});
+
+function actualizarInterfazUsuario(perfil) {
+  nombreUsuarioNavegacion.innerText = perfil.nombreUsuario;
+  if (perfil.fotoURL) {
+    avatarNavegacion.innerHTML = `<img src="${perfil.fotoURL}" alt="avatar" />`;
+  } else {
+    avatarNavegacion.innerText = perfil.nombreUsuario.charAt(0).toUpperCase();
+  }
+}
+
+// Guardar apodo personalizado
+formularioAsignarNombre.addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  const nombreDeseado = campoNombreUsuario.value.trim();
+  if (!nombreDeseado || !usuarioActualAuth) return;
+
+  const datosPerfil = {
+    idUsuario: usuarioActualAuth.uid,
+    nombreUsuario: nombreDeseado,
+    fotoURL: usuarioActualAuth.photoURL || null,
+    correo: usuarioActualAuth.email || null,
+    fechaActualizacion: serverTimestamp()
+  };
+
+  try {
+    await setDoc(doc(baseDatos, "usuarios", usuarioActualAuth.uid), datosPerfil, { merge: true });
+    perfilActual = datosPerfil;
+    actualizarInterfazUsuario(datosPerfil);
+    modalAsignarNombre.classList.add("hidden");
+  } catch (error) {
+    console.error("Error al registrar nombre de usuario:", error);
+    alert("No se pudo guardar el nombre de usuario.");
+  }
+});
+
+// Cambiar apodo al hacer clic sobre el chip de perfil
+tarjetaPerfilUsuario.addEventListener("click", (evento) => {
+  if (evento.target.closest("#btnLogout")) return;
+  if (perfilActual) {
+    campoNombreUsuario.value = perfilActual.nombreUsuario;
+    modalAsignarNombre.classList.remove("hidden");
+  }
+});
+
+// Iniciar sesión con Google
+botonIngresoGoogle.addEventListener("click", async () => {
+  textoErrorAuth.classList.add("hidden");
+  try {
+    await signInWithPopup(autenticacion, proveedorGoogle);
+    modalAutenticacion.classList.add("hidden");
+  } catch (error) {
+    console.error("Error al autenticar con Google:", error);
+    textoErrorAuth.innerText = "Error con Google Sign-In. Comprueba los dominios autorizados en Firebase.";
+    textoErrorAuth.classList.remove("hidden");
+  }
+});
+
+// Iniciar sesión con Facebook
+botonIngresoFacebook.addEventListener("click", async () => {
+  textoErrorAuth.classList.add("hidden");
+  try {
+    await signInWithPopup(autenticacion, proveedorFacebook);
+    modalAutenticacion.classList.add("hidden");
+  } catch (error) {
+    console.error("Error al autenticar con Facebook:", error);
+    textoErrorAuth.innerText = "Facebook Login requiere registrar la App en Meta for Developers.";
+    textoErrorAuth.classList.remove("hidden");
+  }
+});
+
+// Cerrar sesión
+botonCerrarSesion.addEventListener("click", async () => {
+  await signOut(autenticacion);
+  if (idSalaActual) {
+    botonSalirSala.click();
+  }
+});
+
+botonAbrirAuth.addEventListener("click", () => {
+  textoErrorAuth.classList.add("hidden");
+  modalAutenticacion.classList.remove("hidden");
+});
+
+// ==================================================
+// CATÁLOGO DE SALAS PÚBLICAS EN TIEMPO REAL
+// ==================================================
+const refColeccionSalas = collection(baseDatos, "salas");
+
+onSnapshot(refColeccionSalas, (instantanea) => {
+  listaSalas = [];
+  instantanea.forEach((docSala) => {
+    listaSalas.push({ id: docSala.id, ...docSala.data() });
   });
-  renderRooms();
+  dibujarCatalogoSalas();
 }, (error) => {
   console.error("Error al escuchar salas de Firestore:", error);
 });
 
-// ==================================================
-// RENDERIZADO DEL CATÁLOGO
-// ==================================================
-function renderRooms() {
-  roomsGrid.innerHTML = "";
-  const queryText = searchInput.value.toLowerCase().trim();
+function dibujarCatalogoSalas() {
+  contenedorSalas.innerHTML = "";
+  const busqueda = barraBusqueda.value.toLowerCase().trim();
 
-  // Las salas privadas se ocultan del catálogo público
-  const visibleRooms = rooms.filter(room => {
-    if (room.isPrivate) return false;
-    const matchesCategory = (currentFilter === "all" || room.category === currentFilter);
-    const matchesSearch = (room.title || "").toLowerCase().includes(queryText) || 
-                          (room.description || "").toLowerCase().includes(queryText);
-    return matchesCategory && matchesSearch;
+  // Filtrar: ocultar las salas privadas del catálogo público
+  const salasVisibles = listaSalas.filter(sala => {
+    if (sala.esPrivada) return false;
+    const coincideCategoria = (filtroCategoriaActual === "all" || sala.categoria === filtroCategoriaActual);
+    const coincideBusqueda = (sala.titulo || "").toLowerCase().includes(busqueda) || 
+                             (sala.descripcion || "").toLowerCase().includes(busqueda);
+    return coincideCategoria && coincideBusqueda;
   });
 
-  if (visibleRooms.length === 0) {
-    roomsGrid.innerHTML = `<p style="grid-column: 1/-1; color: var(--text-muted); text-align: center; padding: 40px;">No hay salas públicas disponibles. ¡Sé el primero en crear una!</p>`;
+  if (salasVisibles.length === 0) {
+    contenedorSalas.innerHTML = `<p style="grid-column: 1/-1; color: var(--text-muted); text-align: center; padding: 40px;">No hay salas públicas disponibles. ¡Sé el primero en fundar una!</p>`;
     return;
   }
 
-  visibleRooms.forEach(room => {
-    const card = document.createElement("div");
-    card.className = "room-card";
-    card.innerHTML = `
+  salasVisibles.forEach(sala => {
+    const tarjeta = document.createElement("div");
+    tarjeta.className = "room-card";
+    tarjeta.innerHTML = `
       <div class="card-thumb">
-        <img src="${room.image}" alt="${room.title}" loading="lazy" />
+        <img src="${sala.imagen}" alt="${sala.titulo}" loading="lazy" />
         <div class="online-badge">
           <i class="fa-solid fa-circle"></i>
-          <span>${room.usersCount || 1}</span>
+          <span>${sala.contadorUsuarios || 1}</span>
         </div>
       </div>
       <div class="card-content">
-        <h3 class="card-title">${room.title}</h3>
-        <p class="card-desc">${room.description}</p>
+        <h3 class="card-title">${sala.titulo}</h3>
+        <p class="card-desc">${sala.descripcion}</p>
       </div>
     `;
 
-    card.addEventListener("click", () => openRoomDetails(room));
-    roomsGrid.appendChild(card);
+    tarjeta.addEventListener("click", () => abrirDetallesSala(sala));
+    contenedorSalas.appendChild(tarjeta);
   });
 }
 
-function openRoomDetails(room) {
-  selectedModalRoom = room;
-  document.getElementById("modalImg").src = room.image;
-  document.getElementById("modalTitle").innerText = room.title;
-  document.getElementById("modalDesc").innerText = room.description;
-  document.getElementById("modalUsers").innerText = room.usersCount || 1;
-  document.getElementById("modalCategory").innerText = (room.category || "GENERAL").toUpperCase();
-  document.getElementById("modalCode").innerText = room.id;
+function abrirDetallesSala(sala) {
+  salaSeleccionadaModal = sala;
+  document.getElementById("modalImg").src = sala.imagen;
+  document.getElementById("modalTitle").innerText = sala.titulo;
+  document.getElementById("modalDesc").innerText = sala.descripcion;
+  document.getElementById("modalUsers").innerText = sala.contadorUsuarios || 1;
+  document.getElementById("modalCategory").innerText = (sala.categoria || "GENERAL").toUpperCase();
+  document.getElementById("modalCode").innerText = sala.id;
 
-  modalDetails.classList.remove("hidden");
+  modalDetallesSala.classList.remove("hidden");
 }
 
 document.getElementById("btnLaunchChat").addEventListener("click", () => {
-  if (selectedModalRoom) {
-    modalDetails.classList.add("hidden");
-    joinRoom(selectedModalRoom.id);
+  if (salaSeleccionadaModal) {
+    modalDetallesSala.classList.add("hidden");
+    unirseASala(salaSeleccionadaModal.id);
   }
 });
 
 // ==================================================
-// ENTRAR AL CHAT Y SINCRONIZACIÓN DE MENSAJES
+// SISTEMA DE CHATROOM EN VIVO
 // ==================================================
-function joinRoom(roomId) {
-  const room = rooms.find(r => r.id === roomId);
-  if (!room) return;
+function unirseASala(idSala) {
+  const sala = listaSalas.find(s => s.id === idSala);
+  if (!sala) return;
 
-  currentRoomId = roomId;
-  chatRoomTitle.innerText = room.title;
-  chatRoomImg.src = room.image;
-  userCount.innerText = "En vivo";
+  idSalaActual = idSala;
+  tituloSalaChat.innerText = sala.titulo;
+  imagenSalaChat.src = sala.imagen;
 
-  participantsList.innerHTML = `
+  const nombreMostrar = perfilActual ? perfilActual.nombreUsuario : "Invitado";
+  listaParticipantes.innerHTML = `
     <div class="participant-item">
-      <div class="avatar" style="background:#00b06f;">Tú</div>
-      <span>${currentUser} (Tú)</span>
+      <div class="avatar" style="background:#00b06f;">${nombreMostrar.charAt(0).toUpperCase()}</div>
+      <span>${nombreMostrar} (Tú)</span>
     </div>
   `;
 
-  catalogView.classList.add("hidden");
-  chatView.classList.remove("hidden");
-  chatInput.focus();
+  vistaCatalogo.classList.add("hidden");
+  vistaChat.classList.remove("hidden");
+  campoTextoMensaje.focus();
 
-  if (unsubscribeMessages) {
-    unsubscribeMessages();
-  }
+  if (cancelarEscuchaMensajes) cancelarEscuchaMensajes();
 
-  // Escuchar mensajes en tiempo real dentro de la sala elegida
-  const messagesRef = collection(db, "salas", roomId, "mensajes");
-  const messagesQuery = query(messagesRef, orderBy("timestamp", "asc"));
+  // Escuchar subcolección "mensajes" ordenada cronológicamente
+  const refMensajes = collection(baseDatos, "salas", idSala, "mensajes");
+  const consultaMensajes = query(refMensajes, orderBy("fechaCreacion", "asc"));
 
-  unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
-    messagesArea.innerHTML = "";
-    snapshot.forEach((docSnap) => {
-      const msg = docSnap.data();
-      const isMe = msg.author === currentUser;
-      const bubble = document.createElement("div");
-      bubble.className = `chat-bubble ${isMe ? 'bubble-user' : 'bubble-other'}`;
-      bubble.innerHTML = `
-        ${!isMe ? `<div class="bubble-author">${msg.author}</div>` : ""}
-        <div>${escapeHTML(msg.text || "")}</div>
-        <div class="bubble-time">${msg.time || ""}</div>
+  cancelarEscuchaMensajes = onSnapshot(consultaMensajes, (instantanea) => {
+    areaMensajes.innerHTML = "";
+    instantanea.forEach((docMensaje) => {
+      const datos = docMensaje.data();
+      const esMio = (perfilActual && datos.idUsuario === perfilActual.idUsuario) || datos.nombreUsuario === nombreMostrar;
+      const burbuja = document.createElement("div");
+      burbuja.className = `chat-bubble ${esMio ? 'bubble-user' : 'bubble-other'}`;
+      burbuja.innerHTML = `
+        ${!esMio ? `<div class="bubble-author">${escaparTextoHTML(datos.nombreUsuario || "Anónimo")}</div>` : ""}
+        <div>${escaparTextoHTML(datos.texto || "")}</div>
+        <div class="bubble-time">${datos.hora || ""}</div>
       `;
-      messagesArea.appendChild(bubble);
+      areaMensajes.appendChild(burbuja);
     });
-    messagesArea.scrollTop = messagesArea.scrollHeight;
-  }, (err) => {
-    console.error("Error al recibir mensajes de Firestore:", err);
+    areaMensajes.scrollTop = areaMensajes.scrollHeight;
+  }, (error) => {
+    console.error("Error al recibir mensajes:", error);
   });
 }
 
-async function sendMessage() {
-  const text = chatInput.value.trim();
-  if (!text || !currentRoomId) return;
+async function enviarMensaje() {
+  if (!perfilActual) {
+    modalAutenticacion.classList.remove("hidden");
+    return;
+  }
 
-  const now = new Date();
-  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  const texto = campoTextoMensaje.value.trim();
+  if (!texto || !idSalaActual) return;
 
-  chatInput.value = "";
+  const ahora = new Date();
+  const formatoHora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+
+  campoTextoMensaje.value = "";
 
   try {
-    const messagesRef = collection(db, "salas", currentRoomId, "mensajes");
-    await addDoc(messagesRef, {
-      author: currentUser,
-      text: text,
-      time: timeStr,
-      timestamp: serverTimestamp()
+    const refMensajes = collection(baseDatos, "salas", idSalaActual, "mensajes");
+    await addDoc(refMensajes, {
+      idUsuario: perfilActual.idUsuario,
+      nombreUsuario: perfilActual.nombreUsuario,
+      texto: texto,
+      hora: formatoHora,
+      fechaCreacion: serverTimestamp()
     });
-  } catch (err) {
-    console.error("Error al registrar mensaje:", err);
+  } catch (error) {
+    console.error("Error al registrar mensaje:", error);
   }
 }
 
-btnLeaveRoom.addEventListener("click", () => {
-  if (unsubscribeMessages) {
-    unsubscribeMessages();
-    unsubscribeMessages = null;
+botonSalirSala.addEventListener("click", () => {
+  if (cancelarEscuchaMensajes) {
+    cancelarEscuchaMensajes();
+    cancelarEscuchaMensajes = null;
   }
-  currentRoomId = null;
-  chatView.classList.add("hidden");
-  catalogView.classList.remove("hidden");
-  renderRooms();
+  idSalaActual = null;
+  vistaChat.classList.add("hidden");
+  vistaCatalogo.classList.remove("hidden");
+  dibujarCatalogoSalas();
 });
 
-btnSendMessage.addEventListener("click", sendMessage);
-chatInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") sendMessage();
+botonEnviarMensaje.addEventListener("click", enviarMensaje);
+campoTextoMensaje.addEventListener("keydown", (evento) => {
+  if (evento.key === "Enter") enviarMensaje();
 });
 
 // ==================================================
-// ENTRADA A SALA PRIVADA CON CÓDIGO Y CONTRASEÑA
+// ACCESO A SALA PRIVADA CON CONTRASEÑA
 // ==================================================
 document.getElementById("btnOpenPrivateJoin").addEventListener("click", () => {
   document.getElementById("privateErrorMsg").classList.add("hidden");
   document.getElementById("formPrivateJoin").reset();
-  modalPrivateJoin.classList.remove("hidden");
+  modalUnirsePrivada.classList.remove("hidden");
 });
 
-document.getElementById("formPrivateJoin").addEventListener("submit", (e) => {
-  e.preventDefault();
-  const code = document.getElementById("privateCodeInput").value.trim();
-  const pass = document.getElementById("privatePassInput").value.trim();
-  const errorMsg = document.getElementById("privateErrorMsg");
+document.getElementById("formPrivateJoin").addEventListener("submit", (evento) => {
+  evento.preventDefault();
+  const codigo = document.getElementById("privateCodeInput").value.trim();
+  const clave = document.getElementById("privatePassInput").value.trim();
+  const mensajeError = document.getElementById("privateErrorMsg");
 
-  const targetRoom = rooms.find(r => r.id.toLowerCase() === code.toLowerCase() && r.isPrivate);
+  const salaEncontrada = listaSalas.find(s => s.id.toLowerCase() === codigo.toLowerCase() && s.esPrivada);
 
-  if (targetRoom && targetRoom.password === pass) {
-    modalPrivateJoin.classList.add("hidden");
-    joinRoom(targetRoom.id);
+  if (salaEncontrada && salaEncontrada.clave === clave) {
+    modalUnirsePrivada.classList.add("hidden");
+    unirseASala(salaEncontrada.id);
   } else {
-    errorMsg.classList.remove("hidden");
+    mensajeError.classList.remove("hidden");
   }
 });
 
@@ -253,102 +396,105 @@ document.getElementById("formPrivateJoin").addEventListener("submit", (e) => {
 // CREACIÓN DE SALA EN FIRESTORE
 // ==================================================
 document.getElementById("btnOpenCreate").addEventListener("click", () => {
+  if (!perfilActual) {
+    modalAutenticacion.classList.remove("hidden");
+    return;
+  }
   document.getElementById("formCreateRoom").reset();
   document.getElementById("passwordGroup").classList.add("hidden");
-  modalCreateRoom.classList.remove("hidden");
+  modalCrearSala.classList.remove("hidden");
 });
 
-document.getElementById("createIsPrivate").addEventListener("change", (e) => {
-  const pwdGroup = document.getElementById("passwordGroup");
-  const pwdInput = document.getElementById("createPassword");
-  if (e.target.checked) {
-    pwdGroup.classList.remove("hidden");
-    pwdInput.setAttribute("required", "true");
+document.getElementById("createIsPrivate").addEventListener("change", (evento) => {
+  const grupoClave = document.getElementById("passwordGroup");
+  const campoClave = document.getElementById("createPassword");
+  if (evento.target.checked) {
+    grupoClave.classList.remove("hidden");
+    campoClave.setAttribute("required", "true");
   } else {
-    pwdGroup.classList.add("hidden");
-    pwdInput.removeAttribute("required");
+    grupoClave.classList.add("hidden");
+    campoClave.removeAttribute("required");
   }
 });
 
-document.getElementById("formCreateRoom").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const isPrivate = document.getElementById("createIsPrivate").checked;
-  const title = document.getElementById("createTitle").value.trim();
-  const desc = document.getElementById("createDesc").value.trim();
-  const category = document.getElementById("createCategory").value;
-  const customImg = document.getElementById("createImgUrl").value.trim();
-  const password = document.getElementById("createPassword").value.trim();
+document.getElementById("formCreateRoom").addEventListener("submit", async (evento) => {
+  evento.preventDefault();
+  const esPrivada = document.getElementById("createIsPrivate").checked;
+  const titulo = document.getElementById("createTitle").value.trim();
+  const descripcion = document.getElementById("createDesc").value.trim();
+  const categoria = document.getElementById("createCategory").value;
+  const imagenPersonalizada = document.getElementById("createImgUrl").value.trim();
+  const clave = document.getElementById("createPassword").value.trim();
 
-  const newId = (isPrivate ? "VIP-" : "ROOM-") + Math.floor(1000 + Math.random() * 9000);
-  const defaultImg = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80";
+  const idGenerado = (esPrivada ? "VIP-" : "SALA-") + Math.floor(1000 + Math.random() * 9000);
+  const imagenDefecto = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80";
 
-  const roomData = {
-    title: title,
-    description: desc,
-    category: category,
-    isPrivate: isPrivate,
-    password: isPrivate ? password : null,
-    usersCount: 1,
-    image: customImg || defaultImg,
-    createdAt: serverTimestamp()
+  const datosSala = {
+    titulo: titulo,
+    descripcion: descripcion,
+    categoria: categoria,
+    esPrivada: esPrivada,
+    clave: esPrivada ? clave : null,
+    idCreador: perfilActual.idUsuario,
+    nombreCreador: perfilActual.nombreUsuario,
+    contadorUsuarios: 1,
+    imagen: imagenPersonalizada || imagenDefecto,
+    fechaCreacion: serverTimestamp()
   };
 
   try {
-    const roomDocRef = doc(db, "salas", newId);
-    await setDoc(roomDocRef, roomData);
+    const docSalaRef = doc(baseDatos, "salas", idGenerado);
+    await setDoc(docSalaRef, datosSala);
 
-    const messagesRef = collection(db, "salas", newId, "mensajes");
-    await addDoc(messagesRef, {
-      author: "Sistema",
-      text: `Sala creada. ¡Bienvenido a ${title}!`,
-      time: "Ahora",
-      timestamp: serverTimestamp()
+    // Primer mensaje emitido por el sistema
+    const refMensajes = collection(baseDatos, "salas", idGenerado, "mensajes");
+    await addDoc(refMensajes, {
+      nombreUsuario: "Sistema",
+      texto: `Sala creada por ${perfilActual.nombreUsuario}. ¡Bienvenidos!`,
+      hora: "Ahora",
+      fechaCreacion: serverTimestamp()
     });
 
-    modalCreateRoom.classList.add("hidden");
+    modalCrearSala.classList.add("hidden");
 
-    if (isPrivate) {
-      alert(`¡Sala Privada Creada con Éxito!\n\nID: ${newId}\nContraseña: ${password}\n\nComparte el ID y la clave con tus amigos para que puedan entrar.`);
+    if (esPrivada) {
+      alert(`¡Sala Privada Creada con Éxito!\n\nID: ${idGenerado}\nContraseña: ${clave}\n\nComparte estos datos únicamente con quienes quieras que entren.`);
     }
-  } catch (err) {
-    console.error("Error al crear sala:", err);
-    alert("Hubo un error al registrar la sala. Comprueba las reglas de Firestore.");
+  } catch (error) {
+    console.error("Error al registrar sala:", error);
+    alert("Hubo un error al registrar la sala en Firebase.");
   }
 });
 
 // ==================================================
-// FILTROS Y CIERRE DE MODALES
+// FILTROS Y EVENTOS DE INTERFAZ
 // ==================================================
-filterBtns.forEach(btn => {
-  btn.addEventListener("click", () => {
-    filterBtns.forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
-    currentFilter = btn.dataset.category;
-    renderRooms();
+botonesFiltro.forEach(boton => {
+  boton.addEventListener("click", () => {
+    botonesFiltro.forEach(b => b.classList.remove("active"));
+    boton.classList.add("active");
+    filtroCategoriaActual = boton.dataset.category;
+    dibujarCatalogoSalas();
   });
 });
 
-searchInput.addEventListener("input", renderRooms);
+barraBusqueda.addEventListener("input", dibujarCatalogoSalas);
 
 document.querySelectorAll(".modal-close").forEach(btn => {
   btn.addEventListener("click", () => {
-    const modalId = btn.dataset.close;
-    document.getElementById(modalId).classList.add("hidden");
+    const idModal = btn.dataset.close;
+    document.getElementById(idModal).classList.add("hidden");
   });
 });
 
-window.addEventListener("click", (e) => {
-  if (e.target.classList.contains("modal-overlay")) {
-    e.target.classList.add("hidden");
+window.addEventListener("click", (evento) => {
+  if (evento.target.classList.contains("modal-overlay")) {
+    evento.target.classList.add("hidden");
   }
 });
 
-function escapeHTML(str) {
-  return str.replace(/[&<>'"]/g, 
-    tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+function escaparTextoHTML(cadena) {
+  return cadena.replace(/[&<>'"]/g, 
+    etiqueta => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[etiqueta] || etiqueta)
   );
 }
-
-// Inicializar chip de usuario
-document.getElementById("navUsername").innerText = currentUser;
-document.getElementById("navAvatar").innerText = currentUser.charAt(0);
