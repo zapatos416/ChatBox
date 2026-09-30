@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BloxChat - Discovery</title>
+  <!-- Fuentes e Iconos -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- BARRA DE NAVEGACIÓN ESTILO ROBLOX -->
+  <header class="roblox-nav">
+    <div class="nav-left">
+      <div class="logo">
+        <span class="logo-box"></span>
+        <span class="logo-text">Blox<span>Chat</span></span>
+      </div>
+      <nav class="nav-links">
+        <a href="#" class="nav-link active">Descubrir</a>
+        <a href="#" class="nav-link">Comunidad</a>
+      </nav>
+    </div>
+
+    <div class="nav-center">
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" placeholder="Buscar salas de chat..." />
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <button id="btnOpenPrivateJoin" class="btn btn-secondary">
+        <i class="fa-solid fa-key"></i> Código Privado
+      </button>
+      <button id="btnOpenCreate" class="btn btn-primary">
+        <i class="fa-solid fa-plus"></i> Crear Sala
+      </button>
+      <div class="user-chip" id="userProfileChip">
+        <div class="avatar" id="navAvatar">U</div>
+        <span id="navUsername">Tú</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- VISTA CATÁLOGO (DISCOVERY) -->
+  <main id="catalogView" class="container">
+    <div class="feed-header">
+      <div>
+        <h1>Explorar Salas de Chat</h1>
+        <p>Haz clic en cualquier portada para abrir y unirte a la conversación</p>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-btn active" data-category="all">Todos</button>
+        <button class="filter-btn" data-category="general">General</button>
+        <button class="filter-btn" data-category="gaming">Gaming</button>
+        <button class="filter-btn" data-category="chill">Chill</button>
+      </div>
+    </div>
+
+    <!-- Grid de tarjetas de chats -->
+    <div id="roomsGrid" class="rooms-grid"></div>
+  </main>
+
+  <!-- VISTA DE CHATROOM -->
+  <section id="chatView" class="chat-container hidden">
+    <!-- Header del chat -->
+    <div class="chat-header">
+      <div class="chat-info">
+        <button id="btnLeaveRoom" class="btn-icon" title="Volver al menú">
+          <i class="fa-solid fa-arrow-left"></i>
+        </button>
+        <img id="chatRoomImg" src="" alt="Room thumbnail" class="chat-room-thumb" />
+        <div>
+          <h2 id="chatRoomTitle">Título del Chat</h2>
+          <span id="chatRoomBadge" class="status-badge"><i class="fa-solid fa-circle"></i> En vivo</span>
+        </div>
+      </div>
+      <div class="chat-actions">
+        <button id="btnRoomInfo" class="btn btn-secondary btn-sm">
+          <i class="fa-solid fa-circle-info"></i> Info
+        </button>
+      </div>
+    </div>
+
+    <!-- Cuerpo del chat -->
+    <div class="chat-body">
+      <div class="chat-main">
+        <div class="messages-area" id="messagesArea"></div>
+        
+        <!-- Input de mensaje -->
+        <div class="chat-input-bar">
+          <input type="text" id="chatInput" placeholder="Escribe un mensaje aquí..." maxlength="400" autocomplete="off" />
+          <button id="btnSendMessage" class="btn-send">
+            <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra lateral de miembros -->
+      <aside class="chat-sidebar">
+        <h3>Participantes (<span id="userCount">0</span>)</h3>
+        <div id="participantsList" class="participants-list"></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- MODAL: DETALLES DE SALA / BOTÓN VERDE DE ENTRAR -->
+  <div id="modalDetails" class="modal-overlay hidden">
+    <div class="modal-card">
+      <button class="modal-close" data-close="modalDetails"><i class="fa-solid fa-xmark"></i></button>
+      <div class="modal-banner">
+        <img id="modalImg" src="" alt="Preview" />
+      </div>
+      <div class="modal-content">
+        <h2 id="modalTitle">Nombre de la Sala</h2>
+        <p id="modalDesc">Descripción...</p>
+        
+        <div class="modal-meta">
+          <span><i class="fa-solid fa-users"></i> <strong id="modalUsers">0</strong> en línea</span>
+          <span><i class="fa-solid fa-tag"></i> <span id="modalCategory">General</span></span>
+          <span id="modalIdTag"><i class="fa-solid fa-hashtag"></i> <span id="modalCode">ID</span></span>
+        </div>
+
+        <button id="btnLaunchChat" class="btn-roblox-green">
+          <i class="fa-solid fa-play"></i> ENTRAR AL CHAT
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: UNIRSE A SALA PRIVADA CON CONTRASEÑA -->
+  <div id="modalPrivateJoin" class="modal-overlay hidden">
+    <div class="modal-card modal-sm">
+      <button class="modal-close" data-close="modalPrivateJoin"><i class="fa-solid fa-xmark"></i></button>
+      <h2><i class="fa-solid fa-lock"></i> Entrar a Sala Privada</h2>
+      <p class="modal-subtitle">Introduce el identificador y la clave de la sala.</p>
+
+      <form id="formPrivateJoin">
+        <div class="form-group">
+          <label>Código o ID de la Sala</label>
+          <input type="text" id="privateCodeInput" placeholder="Ej: SECRET-100" required />
+        </div>
+        <div class="form-group">
+          <label>Contraseña</label>
+          <input type="password" id="privatePassInput" placeholder="Contraseña de acceso" required />
+        </div>
+        <p id="privateErrorMsg" class="error-text hidden">Código o contraseña incorrectos</p>
+        <button type="submit" class="btn btn-primary btn-block">Desbloquear y Entrar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CREAR SALA -->
+  <div id="modalCreateRoom" class="modal-overlay hidden">
+    <div class="modal-card">
+      <button class="modal-close" data-close="modalCreateRoom"><i class="fa-solid fa-xmark"></i></button>
+      <h2>Crear Nueva Sala de Chat</h2>
+      <p class="modal-subtitle">Publica un espacio o crea un salón privado con clave.</p>
+
+      <form id="formCreateRoom">
+        <div class="form-group">
+          <label>Nombre de la Sala</label>
+          <input type="text" id="createTitle" placeholder="Ej: Sala de Charlas Nocturnas" required maxlength="40" />
+        </div>
+        <div class="form-group">
+          <label>Descripción</label>
+          <input type="text" id="createDesc" placeholder="¿De qué trata este chat?" required maxlength="120" />
+        </div>
+        <div class="form-group">
+          <label>Categoría</label>
+          <select id="createCategory">
+            <option value="general">General</option>
+            <option value="gaming">Gaming</option>
+            <option value="chill">Chill</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>URL de Imagen de Portada (Opcional)</label>
+          <input type="url" id="createImgUrl" placeholder="https://images.unsplash.com/..." />
+        </div>
+        
+        <div class="form-group checkbox-group">
+          <label class="custom-toggle">
+            <input type="checkbox" id="createIsPrivate" />
+            <span class="slider"></span>
+          </label>
+          <span>Hacer sala privada (Oculta del catálogo)</span>
+        </div>
+
+        <div class="form-group hidden" id="passwordGroup">
+          <label>Contraseña Requerida</label>
+          <input type="password" id="createPassword" placeholder="Define una contraseña para entrar" />
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Publicar Sala</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
