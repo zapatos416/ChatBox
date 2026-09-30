@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>BloxChat - Discovery</title>
+  
   <!-- Fuentes e Iconos -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,7 +41,7 @@
       <button id="btnOpenCreate" class="btn btn-primary">
         <i class="fa-solid fa-plus"></i> Crear Sala
       </button>
-      <div class="user-chip" id="userProfileChip">
+      <div class="user-chip">
         <div class="avatar" id="navAvatar">U</div>
         <span id="navUsername">Tú</span>
       </div>
@@ -80,11 +81,6 @@
           <span id="chatRoomBadge" class="status-badge"><i class="fa-solid fa-circle"></i> En vivo</span>
         </div>
       </div>
-      <div class="chat-actions">
-        <button id="btnRoomInfo" class="btn btn-secondary btn-sm">
-          <i class="fa-solid fa-circle-info"></i> Info
-        </button>
-      </div>
     </div>
 
     <!-- Cuerpo del chat -->
@@ -103,7 +99,7 @@
 
       <!-- Barra lateral de miembros -->
       <aside class="chat-sidebar">
-        <h3>Participantes (<span id="userCount">0</span>)</h3>
+        <h3>Participantes (<span id="userCount">En vivo</span>)</h3>
         <div id="participantsList" class="participants-list"></div>
       </aside>
     </div>
@@ -121,7 +117,7 @@
         <p id="modalDesc">Descripción...</p>
         
         <div class="modal-meta">
-          <span><i class="fa-solid fa-users"></i> <strong id="modalUsers">0</strong> en línea</span>
+          <span><i class="fa-solid fa-users"></i> <strong id="modalUsers">1</strong> activo</span>
           <span><i class="fa-solid fa-tag"></i> <span id="modalCategory">General</span></span>
           <span id="modalIdTag"><i class="fa-solid fa-hashtag"></i> <span id="modalCode">ID</span></span>
         </div>
@@ -143,7 +139,7 @@
       <form id="formPrivateJoin">
         <div class="form-group">
           <label>Código o ID de la Sala</label>
-          <input type="text" id="privateCodeInput" placeholder="Ej: SECRET-100" required />
+          <input type="text" id="privateCodeInput" placeholder="Ej: VIP-4521" required />
         </div>
         <div class="form-group">
           <label>Contraseña</label>
@@ -165,7 +161,7 @@
       <form id="formCreateRoom">
         <div class="form-group">
           <label>Nombre de la Sala</label>
-          <input type="text" id="createTitle" placeholder="Ej: Sala de Charlas Nocturnas" required maxlength="40" />
+          <input type="text" id="createTitle" placeholder="Ej: Conversaciones de Carreras" required maxlength="40" />
         </div>
         <div class="form-group">
           <label>Descripción</label>
@@ -181,7 +177,7 @@
         </div>
         <div class="form-group">
           <label>URL de Imagen de Portada (Opcional)</label>
-          <input type="url" id="createImgUrl" placeholder="https://images.unsplash.com/..." />
+          <input type="url" id="createImgUrl" placeholder="https://..." />
         </div>
         
         <div class="form-group checkbox-group">
@@ -202,6 +198,7 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <!-- SCRIPT CON TYPE MODULE PARA IMPORTAR FIREBASE NATIVO -->
+  <script type="module" src="script.js"></script>
 </body>
 </html>
