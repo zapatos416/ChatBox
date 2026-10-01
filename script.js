@@ -1,5 +1,5 @@
 // ==================================================
-// IMPORTACIONES DE FIREBASE MODULAR (POR CDN)
+// IMPORTACIONES DE FIREBASE MODULAR (CDN)
 // ==================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
@@ -42,7 +42,12 @@ const autenticacion = getAuth(app);
 // Forzar idioma en español
 autenticacion.languageCode = "es";
 
+// Proveedor de Google configurado para SIEMPRE forzar a elegir cuenta
 const proveedorGoogle = new GoogleAuthProvider();
+proveedorGoogle.setCustomParameters({
+  prompt: "select_account" // Obliga a Google a mostrar la lista de cuentas disponibles
+});
+
 const proveedorFacebook = new FacebookAuthProvider();
 
 // ==================================================
@@ -90,7 +95,7 @@ const imagenSalaChat = document.getElementById("chatRoomImg");
 const listaParticipantes = document.getElementById("participantsList");
 
 // ==================================================
-// CONTROL DE SESIÓN Y APODO EN FIRESTORE
+// CONTROL DE SESIÓN Y ELECCIÓN DE USUARIO
 // ==================================================
 onAuthStateChanged(autenticacion, async (usuario) => {
   usuarioActualAuth = usuario;
@@ -99,38 +104,42 @@ onAuthStateChanged(autenticacion, async (usuario) => {
     botonAbrirAuth.classList.add("hidden");
     tarjetaPerfilUsuario.classList.remove("hidden");
 
-    // 1. Mostrar de inmediato el nombre de su cuenta mientras consulta la base de datos
-    const nombreInicial = usuario.displayName || usuario.email.split('@')[0] || "Usuario";
-    const apodoGuardadoLocal = localStorage.getItem("bloxchat_username_" + usuario.uid);
+    // Nombre sugerido por defecto desde su cuenta
+    const nombreSugerido = usuario.displayName || (usuario.email ? usuario.email.split('@')[0] : "Usuario");
 
-    perfilActual = {
-      idUsuario: usuario.uid,
-      nombreUsuario: apodoGuardadoLocal || nombreInicial,
-      fotoURL: usuario.photoURL || null,
-      correo: usuario.email || null
-    };
-
-    actualizarInterfazUsuario(perfilActual);
-
-    // 2. Comprobar en Firestore si ya existe un perfil personalizado guardado
     try {
+      // Consultar en la base de datos de Firebase si esta cuenta ya tiene un perfil guardado
       const refDocUsuario = doc(baseDatos, "usuarios", usuario.uid);
       const snapUsuario = await getDoc(refDocUsuario);
 
       if (snapUsuario.exists() && snapUsuario.data().nombreUsuario) {
+        // La cuenta ya tenía un apodo creado anteriormente
         perfilActual = snapUsuario.data();
-        localStorage.setItem("bloxchat_username_" + usuario.uid, perfilActual.nombreUsuario);
         actualizarInterfazUsuario(perfilActual);
-      } else if (!apodoGuardadoLocal) {
-        // Si no tiene apodo guardado, abrir el modal para que lo elija
-        campoNombreUsuario.value = nombreInicial.replace(/\s+/g, "_");
+      } else {
+        // Es una cuenta nueva o nunca eligió apodo: abrir modal inmediatamente para que lo escriba
+        perfilActual = {
+          idUsuario: usuario.uid,
+          nombreUsuario: nombreSugerido,
+          fotoURL: usuario.photoURL || null,
+          correo: usuario.email || null
+        };
+        actualizarInterfazUsuario(perfilActual);
+        campoNombreUsuario.value = nombreSugerido.replace(/\s+/g, "_");
         modalAsignarNombre.classList.remove("hidden");
       }
     } catch (error) {
-      console.warn("Aviso al consultar perfil en Firestore:", error);
-      // Si la consulta tarda o falla, se conserva el nombre inicial sin bloquearse
+      console.warn("Aviso al consultar usuario en Firestore:", error);
+      perfilActual = {
+        idUsuario: usuario.uid,
+        nombreUsuario: nombreSugerido,
+        fotoURL: usuario.photoURL || null,
+        correo: usuario.email || null
+      };
+      actualizarInterfazUsuario(perfilActual);
     }
   } else {
+    // Sesión cerrada
     perfilActual = null;
     tarjetaPerfilUsuario.classList.add("hidden");
     botonAbrirAuth.classList.remove("hidden");
@@ -147,7 +156,7 @@ function actualizarInterfazUsuario(perfil) {
   }
 }
 
-// Guardar apodo personalizado
+// Guardar el nombre de usuario elegido en Firestore
 formularioAsignarNombre.addEventListener("submit", async (evento) => {
   evento.preventDefault();
   const nombreDeseado = campoNombreUsuario.value.trim();
@@ -161,13 +170,10 @@ formularioAsignarNombre.addEventListener("submit", async (evento) => {
     fechaActualizacion: serverTimestamp()
   };
 
-  // Guardar en memoria local inmediatamente para que nunca espere
   perfilActual = datosPerfil;
-  localStorage.setItem("bloxchat_username_" + usuarioActualAuth.uid, nombreDeseado);
   actualizarInterfazUsuario(datosPerfil);
   modalAsignarNombre.classList.add("hidden");
 
-  // Guardar en Firestore
   try {
     await setDoc(doc(baseDatos, "usuarios", usuarioActualAuth.uid), datosPerfil, { merge: true });
   } catch (error) {
@@ -175,7 +181,7 @@ formularioAsignarNombre.addEventListener("submit", async (evento) => {
   }
 });
 
-// Cambiar apodo al hacer clic sobre el chip de perfil
+// Permitir cambiar o editar el apodo tocando el chip de usuario en la barra
 tarjetaPerfilUsuario.addEventListener("click", (evento) => {
   if (evento.target.closest("#btnLogout")) return;
   if (perfilActual) {
@@ -184,7 +190,7 @@ tarjetaPerfilUsuario.addEventListener("click", (evento) => {
   }
 });
 
-// Iniciar sesión con Google
+// Botón de Google: Siempre abre el selector para elegir cuenta
 botonIngresoGoogle.addEventListener("click", async () => {
   textoErrorAuth.classList.add("hidden");
   try {
@@ -192,25 +198,25 @@ botonIngresoGoogle.addEventListener("click", async () => {
     modalAutenticacion.classList.add("hidden");
   } catch (error) {
     console.error("Error al autenticar con Google:", error);
-    textoErrorAuth.innerText = "Error con Google Sign-In. Comprueba los dominios autorizados en Firebase.";
+    textoErrorAuth.innerText = "Error con Google Sign-In. Comprueba tu conexión o los dominios en Firebase.";
     textoErrorAuth.classList.remove("hidden");
   }
 });
 
-// Iniciar sesión con Facebook
+// Botón de Facebook
 botonIngresoFacebook.addEventListener("click", async () => {
   textoErrorAuth.classList.add("hidden");
   try {
     await signInWithPopup(autenticacion, proveedorFacebook);
     modalAutenticacion.classList.add("hidden");
   } catch (error) {
-    console.error("Error al autenticar con Facebook:", error);
+    console.error("Error con Facebook Sign-In:", error);
     textoErrorAuth.innerText = "Facebook Login requiere registrar la App en Meta for Developers.";
     textoErrorAuth.classList.remove("hidden");
   }
 });
 
-// Cerrar sesión
+// Cerrar sesión completamente
 botonCerrarSesion.addEventListener("click", async () => {
   await signOut(autenticacion);
   if (idSalaActual) {
@@ -242,7 +248,6 @@ function dibujarCatalogoSalas() {
   contenedorSalas.innerHTML = "";
   const busqueda = barraBusqueda.value.toLowerCase().trim();
 
-  // Ocultar salas privadas del catálogo público
   const salasVisibles = listaSalas.filter(sala => {
     if (sala.esPrivada) return false;
     const coincideCategoria = (filtroCategoriaActual === "all" || sala.categoria === filtroCategoriaActual);
@@ -322,7 +327,7 @@ function unirseASala(idSala) {
 
   if (cancelarEscuchaMensajes) cancelarEscuchaMensajes();
 
-  // Escuchar subcolección "mensajes" ordenada cronológicamente
+  // Escuchar mensajes ordenados cronológicamente
   const refMensajes = collection(baseDatos, "salas", idSala, "mensajes");
   const consultaMensajes = query(refMensajes, orderBy("fechaCreacion", "asc"));
 
@@ -469,7 +474,6 @@ document.getElementById("formCreateRoom").addEventListener("submit", async (even
     const docSalaRef = doc(baseDatos, "salas", idGenerado);
     await setDoc(docSalaRef, datosSala);
 
-    // Primer mensaje emitido por el sistema
     const refMensajes = collection(baseDatos, "salas", idGenerado, "mensajes");
     await addDoc(refMensajes, {
       nombreUsuario: "Sistema",
