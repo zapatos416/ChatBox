@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>BloxChat - Discovery</title>
   
   <!-- Fuentes e Iconos -->
@@ -14,7 +14,7 @@
 </head>
 <body>
 
-  <!-- BARRA DE NAVEGACIÓN ESTILO ROBLOX -->
+  <!-- BARRA DE NAVEGACIÓN -->
   <header class="roblox-nav">
     <div class="nav-left">
       <div class="logo">
@@ -35,20 +35,26 @@
     </div>
 
     <div class="nav-right">
-      <button id="btnOpenPrivateJoin" class="btn btn-secondary">
-        <i class="fa-solid fa-key"></i> Código Privado
+      <!-- Botón exclusivo para ti (Owner Supremo) -->
+      <button id="btnOpenOwnerPanel" class="btn-owner-panel hidden">
+        <i class="fa-solid fa-crown"></i> <span class="hide-mobile">Gestionar Moderadores</span>
       </button>
+
+      <button id="btnOpenPrivateJoin" class="btn btn-secondary">
+        <i class="fa-solid fa-key"></i> <span class="hide-mobile">Código Privado</span>
+      </button>
+
       <button id="btnOpenCreate" class="btn btn-primary">
-        <i class="fa-solid fa-plus"></i> Crear Sala
+        <i class="fa-solid fa-plus"></i> <span class="hide-mobile">Crear Sala</span>
       </button>
 
       <!-- Botón visible si NO ha iniciado sesión -->
       <button id="btnOpenAuth" class="btn btn-roblox-login">
-        <i class="fa-solid fa-user"></i> Iniciar Sesión
+        <i class="fa-solid fa-user"></i> <span class="hide-mobile">Iniciar Sesión</span>
       </button>
 
-      <!-- Chip de perfil visible SI ha iniciado sesión -->
-      <div class="user-chip hidden" id="userProfileChip" title="Cambiar apodo o cerrar sesión">
+      <!-- Chip de perfil interactivo (haz clic para editar perfil y foto) -->
+      <div class="user-chip hidden" id="userProfileChip" title="Personalizar perfil, foto o apodo">
         <div class="avatar" id="navAvatar">U</div>
         <span id="navUsername">Cargando...</span>
         <button id="btnLogout" class="btn-logout" title="Cerrar sesión">
@@ -63,7 +69,7 @@
     <div class="feed-header">
       <div>
         <h1>Explorar Salas de Chat</h1>
-        <p>Haz clic en cualquier portada para abrir y unirte a la conversación</p>
+        <p>Haz clic en cualquier portada para unirte a la conversación</p>
       </div>
       <div class="filter-tabs">
         <button class="filter-btn active" data-category="all">Todos</button>
@@ -90,6 +96,11 @@
           <span id="chatRoomBadge" class="status-badge"><i class="fa-solid fa-circle"></i> En vivo</span>
         </div>
       </div>
+
+      <!-- Botón visible solo si eres Host, Admin de la sala o el Owner Supremo -->
+      <button id="btnOpenRoomSettings" class="btn-room-settings hidden">
+        <i class="fa-solid fa-gear"></i> <span class="hide-mobile">Ajustes</span>
+      </button>
     </div>
 
     <div class="chat-body">
@@ -105,7 +116,7 @@
       </div>
 
       <aside class="chat-sidebar">
-        <h3>Participantes (<span id="userCount">En vivo</span>)</h3>
+        <h3>Participantes</h3>
         <div id="participantsList" class="participants-list"></div>
       </aside>
     </div>
@@ -116,7 +127,7 @@
     <div class="modal-card modal-sm">
       <button class="modal-close" data-close="modalAuth"><i class="fa-solid fa-xmark"></i></button>
       <h2>Bienvenido a BloxChat</h2>
-      <p class="modal-subtitle">Inicia sesión con tu cuenta para crear salas y escribir mensajes.</p>
+      <p class="modal-subtitle">Inicia sesión con tu cuenta para crear salas y chatear.</p>
 
       <div class="auth-buttons">
         <button id="btnLoginGoogle" class="btn-auth btn-google">
@@ -130,18 +141,101 @@
     </div>
   </div>
 
-  <!-- MODAL: ELEGIR APODO / NOMBRE DE USUARIO -->
-  <div id="modalSetUsername" class="modal-overlay hidden">
+  <!-- MODAL: PERFIL DE USUARIO AVANZADO (FOTO, CÁMARA, GALERÍA Y APODO CADA 60 DÍAS) -->
+  <div id="modalUserProfile" class="modal-overlay hidden">
     <div class="modal-card modal-sm">
-      <h2>Elige tu Nombre de Usuario</h2>
-      <p class="modal-subtitle">Este nombre será visible para todos en las salas de chat.</p>
+      <button class="modal-close" data-close="modalUserProfile"><i class="fa-solid fa-xmark"></i></button>
+      <h2>Mi Perfil</h2>
+      <p class="modal-subtitle">Personaliza tu foto y nombre de usuario en BloxChat.</p>
 
-      <form id="formSetUsername">
-        <div class="form-group">
-          <label>Nombre de Usuario</label>
-          <input type="text" id="customUsernameInput" placeholder="Ej: PilotoF1" required maxlength="20" minlength="3" />
+      <form id="formUserProfile">
+        <div class="avatar-edit-container">
+          <div class="profile-preview-avatar" id="avatarPreviewContainer">
+            <span id="avatarPreviewText">U</span>
+            <img id="avatarPreviewImg" src="" alt="Avatar" class="hidden" />
+          </div>
+
+          <div class="avatar-actions">
+            <!-- Galería de fotos -->
+            <label class="btn-avatar-action" title="Elegir de galería">
+              <i class="fa-solid fa-image"></i> Galería
+              <input type="file" id="inputAvatarGallery" accept="image/*" class="hidden" />
+            </label>
+
+            <!-- Tomar foto con la cámara del celular -->
+            <label class="btn-avatar-action" title="Tomar foto con la cámara">
+              <i class="fa-solid fa-camera"></i> Cámara
+              <input type="file" id="inputAvatarCamera" accept="image/*" capture="user" class="hidden" />
+            </label>
+          </div>
         </div>
-        <button type="submit" class="btn btn-roblox-green btn-block">Guardar y Continuar</button>
+
+        <div class="form-group" style="margin-top: 16px;">
+          <label>Nombre de Usuario</label>
+          <input type="text" id="profileUsernameInput" required maxlength="20" minlength="3" placeholder="Tu apodo" />
+          <p id="usernameCooldownNotice" class="cooldown-text hidden">
+            <i class="fa-solid fa-clock"></i> Solo puedes cambiar tu nombre cada 60 días. Próximo cambio disponible en: <span id="daysRemainingText">60</span> días.
+          </p>
+        </div>
+
+        <button type="submit" id="btnSaveProfile" class="btn btn-roblox-green btn-block" style="margin-top: 14px;">
+          Guardar Cambios
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: GESTIÓN DE MODERADORES GLOBALES (SOLO OWNER) -->
+  <div id="modalOwnerPanel" class="modal-overlay hidden">
+    <div class="modal-card">
+      <button class="modal-close" data-close="modalOwnerPanel"><i class="fa-solid fa-xmark"></i></button>
+      <h2><i class="fa-solid fa-crown" style="color:#ffd700;"></i> Panel Supremo de Moderación</h2>
+      <p class="modal-subtitle">Asigna o revoca el rango de Moderador Global a otros usuarios.</p>
+
+      <div class="form-group">
+        <label>Asignar nuevo Moderador (Correo o UID de usuario)</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="newModInput" placeholder="Introduce el correo o UID exacto" style="flex: 1;" />
+          <button id="btnAddModGlobal" class="btn btn-primary">Asignar Rango</button>
+        </div>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;" />
+
+      <h3>Moderadores Globales Activos</h3>
+      <div id="activeModsList" style="margin-top: 10px; max-height: 220px; overflow-y: auto;">
+        <p style="color: var(--text-muted); font-size: 0.85rem;">Cargando moderadores...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AJUSTES / EDITAR SALA -->
+  <div id="modalEditRoom" class="modal-overlay hidden">
+    <div class="modal-card">
+      <button class="modal-close" data-close="modalEditRoom"><i class="fa-solid fa-xmark"></i></button>
+      <h2><i class="fa-solid fa-sliders"></i> Ajustes de la Sala</h2>
+      <p class="modal-subtitle">Modifica la información visible de este chat.</p>
+
+      <form id="formEditRoom">
+        <div class="form-group">
+          <label>Nombre de la Sala</label>
+          <input type="text" id="editRoomTitle" required maxlength="40" />
+        </div>
+        <div class="form-group">
+          <label>Descripción</label>
+          <input type="text" id="editRoomDesc" required maxlength="120" />
+        </div>
+        <div class="form-group">
+          <label>URL de Imagen de Portada</label>
+          <input type="url" id="editRoomImg" />
+        </div>
+        
+        <div class="form-group hidden" id="editPasswordContainer">
+          <label>Cambiar Contraseña (Solo salas privadas)</label>
+          <input type="password" id="editRoomPass" placeholder="Nueva contraseña de acceso" />
+        </div>
+
+        <button type="submit" class="btn btn-roblox-green btn-block">Guardar Cambios</button>
       </form>
     </div>
   </div>
@@ -158,7 +252,6 @@
         <p id="modalDesc">Descripción...</p>
         
         <div class="modal-meta">
-          <span><i class="fa-solid fa-users"></i> <strong id="modalUsers">1</strong> activo</span>
           <span><i class="fa-solid fa-tag"></i> <span id="modalCategory">General</span></span>
           <span id="modalIdTag"><i class="fa-solid fa-hashtag"></i> <span id="modalCode">ID</span></span>
         </div>
@@ -202,7 +295,7 @@
       <form id="formCreateRoom">
         <div class="form-group">
           <label>Nombre de la Sala</label>
-          <input type="text" id="createTitle" placeholder="Ej: Salón de Charlas y Juegos" required maxlength="40" />
+          <input type="text" id="createTitle" placeholder="Ej: Grupo de Estudio" required maxlength="40" />
         </div>
         <div class="form-group">
           <label>Descripción</label>
