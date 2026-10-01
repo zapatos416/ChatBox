@@ -65,7 +65,7 @@ let miIPActual = null;
 let ipsBaneadas = new Set();
 let uidsBaneados = new Set();
 
-// Detección automática de la IP del dispositivo
+// Detección de IP pública
 async function capturarIPVisitante() {
   try {
     const respuesta = await fetch("https://api.ipify.org?format=json");
@@ -118,7 +118,7 @@ function mostrarPantallaBaneo() {
     <div class="banned-screen">
       <i class="fa-solid fa-ban" style="font-size: 5rem; color: #d90429; margin-bottom: 20px;"></i>
       <h1 style="font-size: 2.2rem; font-weight: 900; margin-bottom: 10px;">ACCESO BLOQUEADO PERMANENTEMENTE</h1>
-      <p style="color: #94969c; max-width: 480px; line-height: 1.6;">Tu dirección de red y cuenta han sido vetadas de BloxChat por infracciones graves a las normas comunitarias.</p>
+      <p style="color: #94969c; max-width: 480px; line-height: 1.6;">Tu dirección de red y cuenta han sido vetadas de BloxChat por infracciones a las normas comunitarias.</p>
     </div>
   `;
 }
@@ -136,7 +136,7 @@ let filtroCategoriaActual = "all";
 let cancelarEscuchaMensajes = null;
 let cancelarEscuchaSalaActual = null;
 
-// Elementos DOM
+// Elementos DOM (con asignación segura)
 const vistaCatalogo = document.getElementById("catalogView");
 const vistaChat = document.getElementById("chatView");
 const contenedorSalas = document.getElementById("roomsGrid");
@@ -154,10 +154,10 @@ const botonIngresoGoogle = document.getElementById("btnLoginGoogle");
 const botonIngresoFacebook = document.getElementById("btnLoginFacebook");
 const textoErrorAuth = document.getElementById("authErrorMsg");
 
-// Modal de Perfil Completo
-const modalPerfil = document.getElementById("modalUserProfile");
-const formPerfil = document.getElementById("formUserProfile");
-const campoNombrePerfil = document.getElementById("profileUsernameInput");
+// Modal de Perfil
+const modalPerfil = document.getElementById("modalUserProfile") || document.getElementById("modalSetUsername");
+const formPerfil = document.getElementById("formUserProfile") || document.getElementById("formSetUsername");
+const campoNombrePerfil = document.getElementById("profileUsernameInput") || document.getElementById("customUsernameInput");
 const avisoEnfriamiento = document.getElementById("usernameCooldownNotice");
 const textoDiasRestantes = document.getElementById("daysRemainingText");
 const avatarPreviewImg = document.getElementById("avatarPreviewImg");
@@ -214,13 +214,12 @@ onAuthStateChanged(autenticacion, async (usuario) => {
     esOwnerSupremo = usuario.email && CORREOS_OWNER.includes(usuario.email.toLowerCase());
     esModGlobal = listaModsGlobales.has(usuario.uid);
 
-    botonAbrirAuth.classList.add("hidden");
-    tarjetaPerfilUsuario.classList.remove("hidden");
+    if (botonAbrirAuth) botonAbrirAuth.classList.add("hidden");
+    if (tarjetaPerfilUsuario) tarjetaPerfilUsuario.classList.remove("hidden");
 
-    if (esOwnerSupremo) {
-      btnOpenOwnerPanel.classList.remove("hidden");
-    } else {
-      btnOpenOwnerPanel.classList.add("hidden");
+    if (btnOpenOwnerPanel) {
+      if (esOwnerSupremo) btnOpenOwnerPanel.classList.remove("hidden");
+      else btnOpenOwnerPanel.classList.add("hidden");
     }
 
     const nombreSugerido = usuario.displayName || (usuario.email ? usuario.email.split('@')[0] : "Usuario");
@@ -232,7 +231,6 @@ onAuthStateChanged(autenticacion, async (usuario) => {
       if (snapUsuario.exists()) {
         perfilActual = snapUsuario.data();
       } else {
-        // Usuario nuevo: registrar con foto y su IP
         perfilActual = {
           idUsuario: usuario.uid,
           nombreUsuario: nombreSugerido,
@@ -246,7 +244,6 @@ onAuthStateChanged(autenticacion, async (usuario) => {
 
       actualizarInterfazUsuario(perfilActual);
 
-      // Vincular IP actual en su registro de usuario
       if (miIPActual) {
         await updateDoc(refDocUsuario, { ultimaIP: miIPActual }).catch(() => {});
       }
@@ -265,14 +262,14 @@ onAuthStateChanged(autenticacion, async (usuario) => {
     esOwnerSupremo = false;
     esModGlobal = false;
     perfilActual = null;
-    btnOpenOwnerPanel.classList.add("hidden");
-    tarjetaPerfilUsuario.classList.add("hidden");
-    botonAbrirAuth.classList.remove("hidden");
+    if (btnOpenOwnerPanel) btnOpenOwnerPanel.classList.add("hidden");
+    if (tarjetaPerfilUsuario) tarjetaPerfilUsuario.classList.add("hidden");
+    if (botonAbrirAuth) botonAbrirAuth.classList.remove("hidden");
   }
 });
 
 function actualizarInterfazUsuario(perfil) {
-  if (!perfil) return;
+  if (!perfil || !nombreUsuarioNavegacion) return;
 
   let insigniaHTML = "";
   if (esOwnerSupremo) {
@@ -283,54 +280,59 @@ function actualizarInterfazUsuario(perfil) {
 
   nombreUsuarioNavegacion.innerHTML = `${escaparTextoHTML(perfil.nombreUsuario)} ${insigniaHTML}`;
 
-  if (perfil.fotoURL) {
-    avatarNavegacion.innerHTML = `<img src="${perfil.fotoURL}" alt="avatar" />`;
-  } else {
-    avatarNavegacion.innerText = perfil.nombreUsuario.charAt(0).toUpperCase();
+  if (avatarNavegacion) {
+    if (perfil.fotoURL) {
+      avatarNavegacion.innerHTML = `<img src="${perfil.fotoURL}" alt="avatar" />`;
+    } else {
+      avatarNavegacion.innerText = (perfil.nombreUsuario || "U").charAt(0).toUpperCase();
+    }
   }
 }
 
 // ==================================================
-// PERSONALIZACIÓN DEL PERFIL (FOTO, CÁMARA, GALERÍA Y 60 DÍAS)
+// EVENTOS DE PERFIL (FOTO Y APODO)
 // ==================================================
-tarjetaPerfilUsuario.addEventListener("click", (evento) => {
-  if (evento.target.closest("#btnLogout")) return;
-  if (!perfilActual) return;
+if (tarjetaPerfilUsuario) {
+  tarjetaPerfilUsuario.addEventListener("click", (evento) => {
+    if (evento.target.closest("#btnLogout")) return;
+    if (!perfilActual || !modalPerfil) return;
 
-  nuevaFotoTemporalBase64 = null;
-  campoNombrePerfil.value = perfilActual.nombreUsuario || "";
+    nuevaFotoTemporalBase64 = null;
+    if (campoNombrePerfil) campoNombrePerfil.value = perfilActual.nombreUsuario || "";
 
-  if (perfilActual.fotoURL) {
-    avatarPreviewImg.src = perfilActual.fotoURL;
-    avatarPreviewImg.classList.remove("hidden");
-    avatarPreviewText.classList.add("hidden");
-  } else {
-    avatarPreviewImg.classList.add("hidden");
-    avatarPreviewText.innerText = (perfilActual.nombreUsuario || "U").charAt(0).toUpperCase();
-    avatarPreviewText.classList.remove("hidden");
-  }
+    if (avatarPreviewImg && avatarPreviewText) {
+      if (perfilActual.fotoURL) {
+        avatarPreviewImg.src = perfilActual.fotoURL;
+        avatarPreviewImg.classList.remove("hidden");
+        avatarPreviewText.classList.add("hidden");
+      } else {
+        avatarPreviewImg.classList.add("hidden");
+        avatarPreviewText.innerText = (perfilActual.nombreUsuario || "U").charAt(0).toUpperCase();
+        avatarPreviewText.classList.remove("hidden");
+      }
+    }
 
-  // Validación de los 60 días para el apodo
-  const ahora = Date.now();
-  const fechaUltimoCambio = perfilActual.fechaUltimoCambioNombre || 0;
-  const tiempoTranscurrido = ahora - fechaUltimoCambio;
+    const ahora = Date.now();
+    const fechaUltimoCambio = perfilActual.fechaUltimoCambioNombre || 0;
+    const tiempoTranscurrido = ahora - fechaUltimoCambio;
 
-  if (fechaUltimoCambio && tiempoTranscurrido < TIEMPO_ENFRIAMIENTO_MS) {
-    const msRestantes = TIEMPO_ENFRIAMIENTO_MS - tiempoTranscurrido;
-    const diasRestantes = Math.ceil(msRestantes / (1000 * 60 * 60 * 24));
+    if (campoNombrePerfil && avisoEnfriamiento) {
+      if (fechaUltimoCambio && tiempoTranscurrido < TIEMPO_ENFRIAMIENTO_MS) {
+        const msRestantes = TIEMPO_ENFRIAMIENTO_MS - tiempoTranscurrido;
+        const diasRestantes = Math.ceil(msRestantes / (1000 * 60 * 60 * 24));
+        campoNombrePerfil.disabled = true;
+        if (textoDiasRestantes) textoDiasRestantes.innerText = diasRestantes;
+        avisoEnfriamiento.classList.remove("hidden");
+      } else {
+        campoNombrePerfil.disabled = false;
+        avisoEnfriamiento.classList.add("hidden");
+      }
+    }
 
-    campoNombrePerfil.disabled = true;
-    textoDiasRestantes.innerText = diasRestantes;
-    avisoEnfriamiento.classList.remove("hidden");
-  } else {
-    campoNombrePerfil.disabled = false;
-    avisoEnfriamiento.classList.add("hidden");
-  }
+    modalPerfil.classList.remove("hidden");
+  });
+}
 
-  modalPerfil.classList.remove("hidden");
-});
-
-// Comprimir y recortar foto de la cámara o galería (Canvas 200x200 liviano)
 function procesarImagenSeleccionada(archivo) {
   if (!archivo) return;
 
@@ -352,102 +354,118 @@ function procesarImagenSeleccionada(archivo) {
       ctx.drawImage(img, startX, startY, minLado, minLado, 0, 0, tamano, tamano);
       nuevaFotoTemporalBase64 = canvas.toDataURL("image/jpeg", 0.82);
 
-      avatarPreviewImg.src = nuevaFotoTemporalBase64;
-      avatarPreviewImg.classList.remove("hidden");
-      avatarPreviewText.classList.add("hidden");
+      if (avatarPreviewImg && avatarPreviewText) {
+        avatarPreviewImg.src = nuevaFotoTemporalBase64;
+        avatarPreviewImg.classList.remove("hidden");
+        avatarPreviewText.classList.add("hidden");
+      }
     };
     img.src = e.target.result;
   };
   lector.readAsDataURL(archivo);
 }
 
-inputGaleria.addEventListener("change", (e) => {
-  if (e.target.files && e.target.files[0]) {
-    procesarImagenSeleccionada(e.target.files[0]);
-  }
-});
+if (inputGaleria) {
+  inputGaleria.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) procesarImagenSeleccionada(e.target.files[0]);
+  });
+}
 
-inputCamara.addEventListener("change", (e) => {
-  if (e.target.files && e.target.files[0]) {
-    procesarImagenSeleccionada(e.target.files[0]);
-  }
-});
+if (inputCamara) {
+  inputCamara.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) procesarImagenSeleccionada(e.target.files[0]);
+  });
+}
 
-// Guardar cambios del perfil
-formPerfil.addEventListener("submit", async (evento) => {
-  evento.preventDefault();
-  if (!usuarioActualAuth || !perfilActual) return;
+if (formPerfil) {
+  formPerfil.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    if (!usuarioActualAuth || !perfilActual) return;
 
-  const nuevoNombre = campoNombrePerfil.value.trim();
-  const haCambiadoNombre = (nuevoNombre !== perfilActual.nombreUsuario) && !campoNombrePerfil.disabled;
+    const nuevoNombre = campoNombrePerfil ? campoNombrePerfil.value.trim() : perfilActual.nombreUsuario;
+    const haCambiadoNombre = (nuevoNombre !== perfilActual.nombreUsuario) && !(campoNombrePerfil && campoNombrePerfil.disabled);
 
-  const datosActualizados = {
-    fotoURL: nuevaFotoTemporalBase64 || perfilActual.fotoURL || null,
-    // La IP sigue fija y vinculada a este usuario
-    ultimaIP: perfilActual.ultimaIP || miIPActual || null,
-    fechaActualizacion: serverTimestamp()
-  };
+    const datosActualizados = {
+      fotoURL: nuevaFotoTemporalBase64 || perfilActual.fotoURL || null,
+      ultimaIP: perfilActual.ultimaIP || miIPActual || null,
+      fechaActualizacion: serverTimestamp()
+    };
 
-  if (haCambiadoNombre) {
-    datosActualizados.nombreUsuario = nuevoNombre;
-    datosActualizados.fechaUltimoCambioNombre = Date.now(); // Marca para contar los 60 días
-  }
+    if (haCambiadoNombre) {
+      datosActualizados.nombreUsuario = nuevoNombre;
+      datosActualizados.fechaUltimoCambioNombre = Date.now();
+    }
 
-  try {
-    const refDocUsuario = doc(baseDatos, "usuarios", usuarioActualAuth.uid);
-    await setDoc(refDocUsuario, datosActualizados, { merge: true });
+    try {
+      const refDocUsuario = doc(baseDatos, "usuarios", usuarioActualAuth.uid);
+      await setDoc(refDocUsuario, datosActualizados, { merge: true });
 
-    perfilActual = { ...perfilActual, ...datosActualizados };
-    actualizarInterfazUsuario(perfilActual);
-    modalPerfil.classList.add("hidden");
-    alert("¡Perfil actualizado con éxito!");
-  } catch (error) {
-    console.error("Error al actualizar perfil:", error);
-    alert("Hubo un fallo al guardar los cambios.");
-  }
-});
+      perfilActual = { ...perfilActual, ...datosActualizados };
+      actualizarInterfazUsuario(perfilActual);
+      if (modalPerfil) modalPerfil.classList.add("hidden");
+      alert("¡Perfil actualizado con éxito!");
+    } catch (error) {
+      console.error("Error al actualizar perfil:", error);
+      alert("Hubo un fallo al guardar los cambios.");
+    }
+  });
+}
 
-// Autenticación
-botonIngresoGoogle.addEventListener("click", async () => {
-  textoErrorAuth.classList.add("hidden");
-  try {
-    await signInWithPopup(autenticacion, proveedorGoogle);
-    modalAutenticacion.classList.add("hidden");
-  } catch (error) {
-    textoErrorAuth.innerText = "Error con Google Sign-In.";
-    textoErrorAuth.classList.remove("hidden");
-  }
-});
+// Botones de autenticación
+if (botonIngresoGoogle) {
+  botonIngresoGoogle.addEventListener("click", async () => {
+    if (textoErrorAuth) textoErrorAuth.classList.add("hidden");
+    try {
+      await signInWithPopup(autenticacion, proveedorGoogle);
+      if (modalAutenticacion) modalAutenticacion.classList.add("hidden");
+    } catch (error) {
+      if (textoErrorAuth) {
+        textoErrorAuth.innerText = "Error con Google Sign-In.";
+        textoErrorAuth.classList.remove("hidden");
+      }
+    }
+  });
+}
 
-botonIngresoFacebook.addEventListener("click", async () => {
-  textoErrorAuth.classList.add("hidden");
-  try {
-    await signInWithPopup(autenticacion, proveedorFacebook);
-    modalAutenticacion.classList.add("hidden");
-  } catch (error) {
-    textoErrorAuth.innerText = "Facebook Login requiere configuración en Meta.";
-    textoErrorAuth.classList.remove("hidden");
-  }
-});
+if (botonIngresoFacebook) {
+  botonIngresoFacebook.addEventListener("click", async () => {
+    if (textoErrorAuth) textoErrorAuth.classList.add("hidden");
+    try {
+      await signInWithPopup(autenticacion, proveedorFacebook);
+      if (modalAutenticacion) modalAutenticacion.classList.add("hidden");
+    } catch (error) {
+      if (textoErrorAuth) {
+        textoErrorAuth.innerText = "Facebook Login requiere configuración en Meta.";
+        textoErrorAuth.classList.remove("hidden");
+      }
+    }
+  });
+}
 
-botonCerrarSesion.addEventListener("click", async () => {
-  await signOut(autenticacion);
-  if (idSalaActual) botonSalirSala.click();
-});
+if (botonCerrarSesion) {
+  botonCerrarSesion.addEventListener("click", async () => {
+    await signOut(autenticacion);
+    if (idSalaActual && botonSalirSala) botonSalirSala.click();
+  });
+}
 
-botonAbrirAuth.addEventListener("click", () => {
-  textoErrorAuth.classList.add("hidden");
-  modalAutenticacion.classList.remove("hidden");
-});
+if (botonAbrirAuth) {
+  botonAbrirAuth.addEventListener("click", () => {
+    if (textoErrorAuth) textoErrorAuth.classList.add("hidden");
+    if (modalAutenticacion) modalAutenticacion.classList.remove("hidden");
+  });
+}
 
 // ==================================================
 // PANEL DE CONTROL DEL OWNER (GESTIÓN DE MODS)
 // ==================================================
-btnOpenOwnerPanel.addEventListener("click", () => {
-  if (!esOwnerSupremo) return;
-  renderizarListaModsPanel();
-  modalOwnerPanel.classList.remove("hidden");
-});
+if (btnOpenOwnerPanel) {
+  btnOpenOwnerPanel.addEventListener("click", () => {
+    if (!esOwnerSupremo) return;
+    renderizarListaModsPanel();
+    if (modalOwnerPanel) modalOwnerPanel.classList.remove("hidden");
+  });
+}
 
 function renderizarListaModsPanel() {
   if (!activeModsList) return;
@@ -474,48 +492,48 @@ function renderizarListaModsPanel() {
   });
 }
 
-// Nombrar nuevo Moderador Global
-btnAddModGlobal.addEventListener("click", async () => {
-  if (!esOwnerSupremo) return;
-  const identificador = newModInput.value.trim();
-  if (!identificador) return;
+if (btnAddModGlobal) {
+  btnAddModGlobal.addEventListener("click", async () => {
+    if (!esOwnerSupremo || !newModInput) return;
+    const identificador = newModInput.value.trim();
+    if (!identificador) return;
 
-  try {
-    let uidObjetivo = identificador;
-    let datosUsuario = { nombreUsuario: "Mod_" + identificador.slice(0, 5), correo: identificador };
+    try {
+      let uidObjetivo = identificador;
+      let datosUsuario = { nombreUsuario: "Mod_" + identificador.slice(0, 5), correo: identificador };
 
-    if (identificador.includes("@")) {
-      const q = query(collection(baseDatos, "usuarios"), where("correo", "==", identificador.toLowerCase()));
-      const snap = await getDocs(q);
-      if (snap.empty) {
-        alert("No se encontró ningún usuario registrado con ese correo.");
+      if (identificador.includes("@")) {
+        const q = query(collection(baseDatos, "usuarios"), where("correo", "==", identificador.toLowerCase()));
+        const snap = await getDocs(q);
+        if (snap.empty) {
+          alert("No se encontró ningún usuario registrado con ese correo.");
+          return;
+        }
+        uidObjetivo = snap.docs[0].id;
+        datosUsuario = snap.docs[0].data();
+      }
+
+      if (uidObjetivo === usuarioActualAuth.uid) {
+        alert("Tú ya eres el Owner Supremo.");
         return;
       }
-      uidObjetivo = snap.docs[0].id;
-      datosUsuario = snap.docs[0].data();
+
+      await setDoc(doc(baseDatos, "moderadores_globales", uidObjetivo), {
+        nombreUsuario: datosUsuario.nombreUsuario || "Moderador",
+        correo: datosUsuario.correo || identificador,
+        asignadoPor: perfilActual.nombreUsuario,
+        fechaAsignacion: serverTimestamp()
+      });
+
+      newModInput.value = "";
+      alert(`Rango de Moderador Global otorgado.`);
+    } catch (error) {
+      console.error("Error al asignar moderador:", error);
+      alert("Error al otorgar rango.");
     }
+  });
+}
 
-    if (uidObjetivo === usuarioActualAuth.uid) {
-      alert("Tú ya eres el Owner Supremo.");
-      return;
-    }
-
-    await setDoc(doc(baseDatos, "moderadores_globales", uidObjetivo), {
-      nombreUsuario: datosUsuario.nombreUsuario || "Moderador",
-      correo: datosUsuario.correo || identificador,
-      asignadoPor: perfilActual.nombreUsuario,
-      fechaAsignacion: serverTimestamp()
-    });
-
-    newModInput.value = "";
-    alert(`Rango de Moderador Global otorgado.`);
-  } catch (error) {
-    console.error("Error al asignar moderador:", error);
-    alert("Error al otorgar rango.");
-  }
-});
-
-// Revocar Moderador Global
 window.revocarModGlobal = async function(uidMod, nombreMod) {
   if (!esOwnerSupremo) return;
   const confirmar = confirm(`¿Deseas quitar el rango a "${nombreMod}"? Perderá todos sus poderes de moderación.`);
@@ -538,7 +556,6 @@ window.ejecutarSancion = async function(uidABanear, nombreABanear) {
     return;
   }
 
-  // Protección al Owner: Intocable
   const docInfractor = await getDoc(doc(baseDatos, "usuarios", uidABanear));
   const correoInfractor = (docInfractor.exists() && docInfractor.data().correo) ? docInfractor.data().correo.toLowerCase() : "";
   
@@ -561,7 +578,6 @@ window.ejecutarSancion = async function(uidABanear, nombreABanear) {
       ipInfractor = docInfractor.data().ultimaIP;
     }
 
-    // Vetar UID
     await setDoc(doc(baseDatos, "baneados", uidABanear), {
       nombreUsuario: nombreABanear,
       ejecutadoPor: perfilActual.nombreUsuario,
@@ -569,7 +585,6 @@ window.ejecutarSancion = async function(uidABanear, nombreABanear) {
       fecha: serverTimestamp()
     });
 
-    // Vetar IP
     if (ipInfractor) {
       await setDoc(doc(baseDatos, "ips_baneadas", ipInfractor), {
         idUsuarioOriginal: uidABanear,
@@ -578,7 +593,6 @@ window.ejecutarSancion = async function(uidABanear, nombreABanear) {
       });
     }
 
-    // Purga de mensajes en la sala actual
     if (idSalaActual) {
       const refMensajesSala = collection(baseDatos, "salas", idSalaActual, "mensajes");
       const consultaMensajes = query(refMensajesSala, where("idUsuario", "==", uidABanear));
@@ -604,7 +618,7 @@ window.ejecutarSancion = async function(uidABanear, nombreABanear) {
 };
 
 // ==================================================
-// CATÁLOGO DE SALAS PÚBLICAS
+// CATÁLOGO DE SALAS PÚBLICAS EN TIEMPO REAL
 // ==================================================
 const refColeccionSalas = collection(baseDatos, "salas");
 
@@ -614,11 +628,14 @@ onSnapshot(refColeccionSalas, (instantanea) => {
     listaSalas.push({ id: docSala.id, ...docSala.data() });
   });
   dibujarCatalogoSalas();
+}, (error) => {
+  console.error("Error al escuchar salas:", error);
 });
 
 function dibujarCatalogoSalas() {
+  if (!contenedorSalas) return;
   contenedorSalas.innerHTML = "";
-  const busqueda = barraBusqueda.value.toLowerCase().trim();
+  const busqueda = barraBusqueda ? barraBusqueda.value.toLowerCase().trim() : "";
 
   const salasVisibles = listaSalas.filter(sala => {
     if (sala.esPrivada) return false;
@@ -629,7 +646,7 @@ function dibujarCatalogoSalas() {
   });
 
   if (salasVisibles.length === 0) {
-    contenedorSalas.innerHTML = `<p style="grid-column: 1/-1; color: var(--text-muted); text-align: center; padding: 40px;">No hay salas públicas disponibles.</p>`;
+    contenedorSalas.innerHTML = `<p style="grid-column: 1/-1; color: var(--text-muted); text-align: center; padding: 40px;">No hay salas públicas disponibles. ¡Sé el primero en crear una!</p>`;
     return;
   }
 
@@ -638,7 +655,7 @@ function dibujarCatalogoSalas() {
     tarjeta.className = "room-card";
     tarjeta.innerHTML = `
       <div class="card-thumb">
-        <img src="${sala.imagen}" alt="${sala.titulo}" loading="lazy" />
+        <img src="${sala.imagen || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600'}" alt="${escaparTextoHTML(sala.titulo)}" loading="lazy" />
       </div>
       <div class="card-content">
         <h3 class="card-title">${escaparTextoHTML(sala.titulo)}</h3>
@@ -652,20 +669,29 @@ function dibujarCatalogoSalas() {
 
 function abrirDetallesSala(sala) {
   salaSeleccionadaModal = sala;
-  document.getElementById("modalImg").src = sala.imagen;
-  document.getElementById("modalTitle").innerText = sala.titulo;
-  document.getElementById("modalDesc").innerText = sala.descripcion;
-  document.getElementById("modalCategory").innerText = (sala.categoria || "GENERAL").toUpperCase();
-  document.getElementById("modalCode").innerText = sala.id;
-  modalDetallesSala.classList.remove("hidden");
+  const modalImg = document.getElementById("modalImg");
+  const modalTitle = document.getElementById("modalTitle");
+  const modalDesc = document.getElementById("modalDesc");
+  const modalCategory = document.getElementById("modalCategory");
+  const modalCode = document.getElementById("modalCode");
+
+  if (modalImg) modalImg.src = sala.imagen;
+  if (modalTitle) modalTitle.innerText = sala.titulo;
+  if (modalDesc) modalDesc.innerText = sala.descripcion;
+  if (modalCategory) modalCategory.innerText = (sala.categoria || "GENERAL").toUpperCase();
+  if (modalCode) modalCode.innerText = sala.id;
+  if (modalDetallesSala) modalDetallesSala.classList.remove("hidden");
 }
 
-document.getElementById("btnLaunchChat").addEventListener("click", () => {
-  if (salaSeleccionadaModal) {
-    modalDetallesSala.classList.add("hidden");
-    unirseASala(salaSeleccionadaModal.id);
-  }
-});
+const btnLaunchChat = document.getElementById("btnLaunchChat");
+if (btnLaunchChat) {
+  btnLaunchChat.addEventListener("click", () => {
+    if (salaSeleccionadaModal) {
+      if (modalDetallesSala) modalDetallesSala.classList.add("hidden");
+      unirseASala(salaSeleccionadaModal.id);
+    }
+  });
+}
 
 // ==================================================
 // SALA DE CHAT EN VIVO
@@ -682,9 +708,9 @@ function unirseASala(idSala) {
   idSalaActual = idSala;
   salaActualData = sala;
 
-  vistaCatalogo.classList.add("hidden");
-  vistaChat.classList.remove("hidden");
-  campoTextoMensaje.focus();
+  if (vistaCatalogo) vistaCatalogo.classList.add("hidden");
+  if (vistaChat) vistaChat.classList.remove("hidden");
+  if (campoTextoMensaje) campoTextoMensaje.focus();
 
   if (cancelarEscuchaMensajes) cancelarEscuchaMensajes();
   if (cancelarEscuchaSalaActual) cancelarEscuchaSalaActual();
@@ -692,17 +718,17 @@ function unirseASala(idSala) {
   cancelarEscuchaSalaActual = onSnapshot(doc(baseDatos, "salas", idSala), (docSnap) => {
     if (!docSnap.exists()) {
       alert("Esta sala ha sido eliminada.");
-      botonSalirSala.click();
+      if (botonSalirSala) botonSalirSala.click();
       return;
     }
 
     salaActualData = { id: docSnap.id, ...docSnap.data() };
-    tituloSalaChat.innerText = salaActualData.titulo;
-    imagenSalaChat.src = salaActualData.imagen;
+    if (tituloSalaChat) tituloSalaChat.innerText = salaActualData.titulo;
+    if (imagenSalaChat) imagenSalaChat.src = salaActualData.imagen;
 
     if (salaActualData.esPrivada && usuarioActualAuth && Array.isArray(salaActualData.bloqueados) && salaActualData.bloqueados.includes(usuarioActualAuth.uid)) {
       alert("Has sido bloqueado de esta sala.");
-      botonSalirSala.click();
+      if (botonSalirSala) botonSalirSala.click();
       return;
     }
 
@@ -713,6 +739,7 @@ function unirseASala(idSala) {
   const consultaMensajes = query(refMensajes, orderBy("fechaCreacion", "asc"));
 
   cancelarEscuchaMensajes = onSnapshot(consultaMensajes, (instantanea) => {
+    if (!areaMensajes) return;
     areaMensajes.innerHTML = "";
     instantanea.forEach((docMensaje) => {
       const datos = docMensaje.data();
@@ -745,29 +772,30 @@ function unirseASala(idSala) {
 
 function actualizarPermisosInterfazSala() {
   if (!salaActualData || !usuarioActualAuth) {
-    btnOpenRoomSettings.classList.add("hidden");
+    if (btnOpenRoomSettings) btnOpenRoomSettings.classList.add("hidden");
     return;
   }
 
   const soyHost = (salaActualData.idCreador === usuarioActualAuth.uid);
   const soyAdminSala = Array.isArray(salaActualData.admins) && salaActualData.admins.includes(usuarioActualAuth.uid);
 
-  if (soyHost || soyAdminSala || esOwnerSupremo) {
-    btnOpenRoomSettings.classList.remove("hidden");
-  } else {
-    btnOpenRoomSettings.classList.add("hidden");
+  if (btnOpenRoomSettings) {
+    if (soyHost || soyAdminSala || esOwnerSupremo) {
+      btnOpenRoomSettings.classList.remove("hidden");
+    } else {
+      btnOpenRoomSettings.classList.add("hidden");
+    }
   }
 
   dibujarListaParticipantes();
 }
 
 function dibujarListaParticipantes() {
+  if (!listaParticipantes || !salaActualData) return;
   listaParticipantes.innerHTML = "";
-  if (!salaActualData) return;
 
   const miUid = usuarioActualAuth ? usuarioActualAuth.uid : null;
 
-  // Creador original de la sala
   const itemHost = document.createElement("div");
   itemHost.className = "participant-item";
   itemHost.innerHTML = `
@@ -776,8 +804,7 @@ function dibujarListaParticipantes() {
   `;
   listaParticipantes.appendChild(itemHost);
 
-  // Mi usuario
-  if (miUid && miUid !== salaActualData.idCreador) {
+  if (miUid && miUid !== salaActualData.idCreador && perfilActual) {
     const itemYo = document.createElement("div");
     itemYo.className = "participant-item";
     const esAdminYo = Array.isArray(salaActualData.admins) && salaActualData.admins.includes(miUid);
@@ -790,50 +817,56 @@ function dibujarListaParticipantes() {
 }
 
 // Edición de Sala
-btnOpenRoomSettings.addEventListener("click", () => {
-  if (!salaActualData) return;
-  editRoomTitle.value = salaActualData.titulo || "";
-  editRoomDesc.value = salaActualData.descripcion || "";
-  editRoomImg.value = salaActualData.imagen || "";
+if (btnOpenRoomSettings) {
+  btnOpenRoomSettings.addEventListener("click", () => {
+    if (!salaActualData) return;
+    if (editRoomTitle) editRoomTitle.value = salaActualData.titulo || "";
+    if (editRoomDesc) editRoomDesc.value = salaActualData.descripcion || "";
+    if (editRoomImg) editRoomImg.value = salaActualData.imagen || "";
 
-  if (salaActualData.esPrivada) {
-    editPasswordContainer.classList.remove("hidden");
-    editRoomPass.value = salaActualData.clave || "";
-  } else {
-    editPasswordContainer.classList.add("hidden");
-  }
+    if (editPasswordContainer && editRoomPass) {
+      if (salaActualData.esPrivada) {
+        editPasswordContainer.classList.remove("hidden");
+        editRoomPass.value = salaActualData.clave || "";
+      } else {
+        editPasswordContainer.classList.add("hidden");
+      }
+    }
 
-  modalEditRoom.classList.remove("hidden");
-});
+    if (modalEditRoom) modalEditRoom.classList.remove("hidden");
+  });
+}
 
-formEditRoom.addEventListener("submit", async (evento) => {
-  evento.preventDefault();
-  if (!salaActualData || !idSalaActual) return;
+if (formEditRoom) {
+  formEditRoom.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    if (!salaActualData || !idSalaActual) return;
 
-  const datosActualizados = {
-    titulo: editRoomTitle.value.trim(),
-    descripcion: editRoomDesc.value.trim(),
-    imagen: editRoomImg.value.trim() || salaActualData.imagen
-  };
+    const datosActualizados = {
+      titulo: editRoomTitle ? editRoomTitle.value.trim() : salaActualData.titulo,
+      descripcion: editRoomDesc ? editRoomDesc.value.trim() : salaActualData.descripcion,
+      imagen: (editRoomImg && editRoomImg.value.trim()) ? editRoomImg.value.trim() : salaActualData.imagen
+    };
 
-  if (salaActualData.esPrivada && editRoomPass.value.trim()) {
-    datosActualizados.clave = editRoomPass.value.trim();
-  }
+    if (salaActualData.esPrivada && editRoomPass && editRoomPass.value.trim()) {
+      datosActualizados.clave = editRoomPass.value.trim();
+    }
 
-  try {
-    await updateDoc(doc(baseDatos, "salas", idSalaActual), datosActualizados);
-    modalEditRoom.classList.add("hidden");
-    alert("Ajustes de sala guardados.");
-  } catch (error) {
-    console.error("Error al editar sala:", error);
-    alert("No se pudieron guardar los cambios.");
-  }
-});
+    try {
+      await updateDoc(doc(baseDatos, "salas", idSalaActual), datosActualizados);
+      if (modalEditRoom) modalEditRoom.classList.add("hidden");
+      alert("Ajustes de sala guardados.");
+    } catch (error) {
+      console.error("Error al editar sala:", error);
+      alert("No se pudieron guardar los cambios.");
+    }
+  });
+}
 
 // Envío de mensajes
 async function enviarMensaje() {
   if (!perfilActual) {
-    modalAutenticacion.classList.remove("hidden");
+    if (modalAutenticacion) modalAutenticacion.classList.remove("hidden");
     return;
   }
 
@@ -842,6 +875,7 @@ async function enviarMensaje() {
     return;
   }
 
+  if (!campoTextoMensaje) return;
   const texto = campoTextoMensaje.value.trim();
   if (!texto || !idSalaActual) return;
 
@@ -862,125 +896,152 @@ async function enviarMensaje() {
   }
 }
 
-botonSalirSala.addEventListener("click", () => {
-  if (cancelarEscuchaMensajes) cancelarEscuchaMensajes();
-  if (cancelarEscuchaSalaActual) cancelarEscuchaSalaActual();
-  cancelarEscuchaMensajes = null;
-  cancelarEscuchaSalaActual = null;
-  idSalaActual = null;
-  salaActualData = null;
-  vistaChat.classList.add("hidden");
-  vistaCatalogo.classList.remove("hidden");
-  dibujarCatalogoSalas();
-});
+if (botonSalirSala) {
+  botonSalirSala.addEventListener("click", () => {
+    if (cancelarEscuchaMensajes) cancelarEscuchaMensajes();
+    if (cancelarEscuchaSalaActual) cancelarEscuchaSalaActual();
+    cancelarEscuchaMensajes = null;
+    cancelarEscuchaSalaActual = null;
+    idSalaActual = null;
+    salaActualData = null;
+    if (vistaChat) vistaChat.classList.add("hidden");
+    if (vistaCatalogo) vistaCatalogo.classList.remove("hidden");
+    dibujarCatalogoSalas();
+  });
+}
 
-botonEnviarMensaje.addEventListener("click", enviarMensaje);
-campoTextoMensaje.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") enviarMensaje();
-});
+if (botonEnviarMensaje) botonEnviarMensaje.addEventListener("click", enviarMensaje);
+if (campoTextoMensaje) {
+  campoTextoMensaje.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") enviarMensaje();
+  });
+}
 
-// Acceso a Salas Privadas
-document.getElementById("btnOpenPrivateJoin").addEventListener("click", () => {
-  document.getElementById("privateErrorMsg").classList.add("hidden");
-  document.getElementById("formPrivateJoin").reset();
-  modalUnirsePrivada.classList.remove("hidden");
-});
+// Salas privadas
+const btnOpenPrivateJoin = document.getElementById("btnOpenPrivateJoin");
+const formPrivateJoin = document.getElementById("formPrivateJoin");
 
-document.getElementById("formPrivateJoin").addEventListener("submit", (evento) => {
-  evento.preventDefault();
-  const codigo = document.getElementById("privateCodeInput").value.trim();
-  const clave = document.getElementById("privatePassInput").value.trim();
-  const mensajeError = document.getElementById("privateErrorMsg");
+if (btnOpenPrivateJoin) {
+  btnOpenPrivateJoin.addEventListener("click", () => {
+    const errorMsg = document.getElementById("privateErrorMsg");
+    if (errorMsg) errorMsg.classList.add("hidden");
+    if (formPrivateJoin) formPrivateJoin.reset();
+    if (modalUnirsePrivada) modalUnirsePrivada.classList.remove("hidden");
+  });
+}
 
-  const salaEncontrada = listaSalas.find(s => s.id.toLowerCase() === codigo.toLowerCase() && s.esPrivada);
+if (formPrivateJoin) {
+  formPrivateJoin.addEventListener("submit", (evento) => {
+    evento.preventDefault();
+    const codigo = document.getElementById("privateCodeInput").value.trim();
+    const clave = document.getElementById("privatePassInput").value.trim();
+    const mensajeError = document.getElementById("privateErrorMsg");
 
-  if (!salaEncontrada || salaEncontrada.clave !== clave) {
-    mensajeError.innerText = "Código o contraseña incorrectos.";
-    mensajeError.classList.remove("hidden");
-    return;
-  }
+    const salaEncontrada = listaSalas.find(s => s.id.toLowerCase() === codigo.toLowerCase() && s.esPrivada);
 
-  if (usuarioActualAuth && Array.isArray(salaEncontrada.bloqueados) && salaEncontrada.bloqueados.includes(usuarioActualAuth.uid)) {
-    mensajeError.innerText = "Has sido bloqueado de esta sala privada.";
-    mensajeError.classList.remove("hidden");
-    return;
-  }
+    if (!salaEncontrada || salaEncontrada.clave !== clave) {
+      if (mensajeError) {
+        mensajeError.innerText = "Código o contraseña incorrectos.";
+        mensajeError.classList.remove("hidden");
+      }
+      return;
+    }
 
-  modalUnirsePrivada.classList.add("hidden");
-  unirseASala(salaEncontrada.id);
-});
+    if (usuarioActualAuth && Array.isArray(salaEncontrada.bloqueados) && salaEncontrada.bloqueados.includes(usuarioActualAuth.uid)) {
+      if (mensajeError) {
+        mensajeError.innerText = "Has sido bloqueado de esta sala privada.";
+        mensajeError.classList.remove("hidden");
+      }
+      return;
+    }
+
+    if (modalUnirsePrivada) modalUnirsePrivada.classList.add("hidden");
+    unirseASala(salaEncontrada.id);
+  });
+}
 
 // Creación de Salas
-document.getElementById("btnOpenCreate").addEventListener("click", () => {
-  if (!perfilActual) {
-    modalAutenticacion.classList.remove("hidden");
-    return;
-  }
-  document.getElementById("formCreateRoom").reset();
-  document.getElementById("passwordGroup").classList.add("hidden");
-  modalCrearSala.classList.remove("hidden");
-});
+const btnOpenCreate = document.getElementById("btnOpenCreate");
+const formCreateRoom = document.getElementById("formCreateRoom");
+const createIsPrivate = document.getElementById("createIsPrivate");
 
-document.getElementById("createIsPrivate").addEventListener("change", (evento) => {
-  const grupoClave = document.getElementById("passwordGroup");
-  const campoClave = document.getElementById("createPassword");
-  if (evento.target.checked) {
-    grupoClave.classList.remove("hidden");
-    campoClave.setAttribute("required", "true");
-  } else {
-    grupoClave.classList.add("hidden");
-    campoClave.removeAttribute("required");
-  }
-});
-
-document.getElementById("formCreateRoom").addEventListener("submit", async (evento) => {
-  evento.preventDefault();
-  const esPrivada = document.getElementById("createIsPrivate").checked;
-  const titulo = document.getElementById("createTitle").value.trim();
-  const descripcion = document.getElementById("createDesc").value.trim();
-  const categoria = document.getElementById("createCategory").value;
-  const imagenPersonalizada = document.getElementById("createImgUrl").value.trim();
-  const clave = document.getElementById("createPassword").value.trim();
-
-  const idGenerado = (esPrivada ? "VIP-" : "SALA-") + Math.floor(1000 + Math.random() * 9000);
-  const imagenDefecto = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80";
-
-  const datosSala = {
-    titulo: titulo,
-    descripcion: descripcion,
-    categoria: categoria,
-    esPrivada: esPrivada,
-    clave: esPrivada ? clave : null,
-    idCreador: perfilActual.idUsuario,
-    nombreCreador: perfilActual.nombreUsuario,
-    admins: [],
-    bloqueados: [],
-    imagen: imagenPersonalizada || imagenDefecto,
-    fechaCreacion: serverTimestamp()
-  };
-
-  try {
-    await setDoc(doc(baseDatos, "salas", idGenerado), datosSala);
-
-    await addDoc(collection(baseDatos, "salas", idGenerado, "mensajes"), {
-      nombreUsuario: "Sistema",
-      texto: `Sala fundada por ${perfilActual.nombreUsuario}. ¡Bienvenidos!`,
-      hora: "Ahora",
-      fechaCreacion: serverTimestamp()
-    });
-
-    modalCrearSala.classList.add("hidden");
-
-    if (esPrivada) {
-      alert(`¡Sala Privada Creada!\n\nID: ${idGenerado}\nContraseña: ${clave}`);
+if (btnOpenCreate) {
+  btnOpenCreate.addEventListener("click", () => {
+    if (!perfilActual) {
+      if (modalAutenticacion) modalAutenticacion.classList.remove("hidden");
+      return;
     }
-  } catch (error) {
-    console.error("Error al crear sala:", error);
-    alert("Hubo un error al registrar la sala.");
-  }
-});
+    if (formCreateRoom) formCreateRoom.reset();
+    const passwordGroup = document.getElementById("passwordGroup");
+    if (passwordGroup) passwordGroup.classList.add("hidden");
+    if (modalCrearSala) modalCrearSala.classList.remove("hidden");
+  });
+}
 
-// Eventos de interfaz y modales
+if (createIsPrivate) {
+  createIsPrivate.addEventListener("change", (evento) => {
+    const grupoClave = document.getElementById("passwordGroup");
+    const campoClave = document.getElementById("createPassword");
+    if (evento.target.checked) {
+      if (grupoClave) grupoClave.classList.remove("hidden");
+      if (campoClave) campoClave.setAttribute("required", "true");
+    } else {
+      if (grupoClave) grupoClave.classList.add("hidden");
+      if (campoClave) campoClave.removeAttribute("required");
+    }
+  });
+}
+
+if (formCreateRoom) {
+  formCreateRoom.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    const esPrivada = createIsPrivate ? createIsPrivate.checked : false;
+    const titulo = document.getElementById("createTitle").value.trim();
+    const descripcion = document.getElementById("createDesc").value.trim();
+    const categoria = document.getElementById("createCategory").value;
+    const imagenPersonalizada = document.getElementById("createImgUrl").value.trim();
+    const clave = document.getElementById("createPassword") ? document.getElementById("createPassword").value.trim() : null;
+
+    const idGenerado = (esPrivada ? "VIP-" : "SALA-") + Math.floor(1000 + Math.random() * 9000);
+    const imagenDefecto = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80";
+
+    const datosSala = {
+      titulo: titulo,
+      descripcion: descripcion,
+      categoria: categoria,
+      esPrivada: esPrivada,
+      clave: esPrivada ? clave : null,
+      idCreador: perfilActual.idUsuario,
+      nombreCreador: perfilActual.nombreUsuario,
+      admins: [],
+      bloqueados: [],
+      imagen: imagenPersonalizada || imagenDefecto,
+      fechaCreacion: serverTimestamp()
+    };
+
+    try {
+      await setDoc(doc(baseDatos, "salas", idGenerado), datosSala);
+
+      await addDoc(collection(baseDatos, "salas", idGenerado, "mensajes"), {
+        nombreUsuario: "Sistema",
+        texto: `Sala fundada por ${perfilActual.nombreUsuario}. ¡Bienvenidos!`,
+        hora: "Ahora",
+        fechaCreacion: serverTimestamp()
+      });
+
+      if (modalCrearSala) modalCrearSala.classList.add("hidden");
+
+      if (esPrivada) {
+        alert(`¡Sala Privada Creada!\n\nID: ${idGenerado}\nContraseña: ${clave}`);
+      }
+    } catch (error) {
+      console.error("Error al crear sala:", error);
+      alert("Hubo un error al registrar la sala.");
+    }
+  });
+}
+
+// Filtros y modales
 botonesFiltro.forEach(boton => {
   boton.addEventListener("click", () => {
     botonesFiltro.forEach(b => b.classList.remove("active"));
@@ -990,12 +1051,13 @@ botonesFiltro.forEach(boton => {
   });
 });
 
-barraBusqueda.addEventListener("input", dibujarCatalogoSalas);
+if (barraBusqueda) barraBusqueda.addEventListener("input", dibujarCatalogoSalas);
 
 document.querySelectorAll(".modal-close").forEach(btn => {
   btn.addEventListener("click", () => {
     const idModal = btn.dataset.close;
-    document.getElementById(idModal).classList.add("hidden");
+    const modal = document.getElementById(idModal);
+    if (modal) modal.classList.add("hidden");
   });
 });
 
@@ -1006,7 +1068,8 @@ window.addEventListener("click", (evento) => {
 });
 
 function escaparTextoHTML(cadena) {
-  return cadena.replace(/[&<>'"]/g, 
+  if (!cadena) return "";
+  return String(cadena).replace(/[&<>'"]/g, 
     tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
   );
 }
