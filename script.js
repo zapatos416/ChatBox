@@ -99,17 +99,36 @@ onAuthStateChanged(autenticacion, async (usuario) => {
     botonAbrirAuth.classList.add("hidden");
     tarjetaPerfilUsuario.classList.remove("hidden");
 
-    // Revisar si ya existe el perfil en la colección "usuarios"
-    const refDocUsuario = doc(baseDatos, "usuarios", usuario.uid);
-    const snapUsuario = await getDoc(refDocUsuario);
+    // 1. Mostrar de inmediato el nombre de su cuenta mientras consulta la base de datos
+    const nombreInicial = usuario.displayName || usuario.email.split('@')[0] || "Usuario";
+    const apodoGuardadoLocal = localStorage.getItem("bloxchat_username_" + usuario.uid);
 
-    if (snapUsuario.exists() && snapUsuario.data().nombreUsuario) {
-      perfilActual = snapUsuario.data();
-      actualizarInterfazUsuario(perfilActual);
-    } else {
-      // Sugerir nombre y abrir modal de apodo
-      campoNombreUsuario.value = (usuario.displayName || "Usuario").replace(/\s+/g, "_");
-      modalAsignarNombre.classList.remove("hidden");
+    perfilActual = {
+      idUsuario: usuario.uid,
+      nombreUsuario: apodoGuardadoLocal || nombreInicial,
+      fotoURL: usuario.photoURL || null,
+      correo: usuario.email || null
+    };
+
+    actualizarInterfazUsuario(perfilActual);
+
+    // 2. Comprobar en Firestore si ya existe un perfil personalizado guardado
+    try {
+      const refDocUsuario = doc(baseDatos, "usuarios", usuario.uid);
+      const snapUsuario = await getDoc(refDocUsuario);
+
+      if (snapUsuario.exists() && snapUsuario.data().nombreUsuario) {
+        perfilActual = snapUsuario.data();
+        localStorage.setItem("bloxchat_username_" + usuario.uid, perfilActual.nombreUsuario);
+        actualizarInterfazUsuario(perfilActual);
+      } else if (!apodoGuardadoLocal) {
+        // Si no tiene apodo guardado, abrir el modal para que lo elija
+        campoNombreUsuario.value = nombreInicial.replace(/\s+/g, "_");
+        modalAsignarNombre.classList.remove("hidden");
+      }
+    } catch (error) {
+      console.warn("Aviso al consultar perfil en Firestore:", error);
+      // Si la consulta tarda o falla, se conserva el nombre inicial sin bloquearse
     }
   } else {
     perfilActual = null;
@@ -119,6 +138,7 @@ onAuthStateChanged(autenticacion, async (usuario) => {
 });
 
 function actualizarInterfazUsuario(perfil) {
+  if (!perfil) return;
   nombreUsuarioNavegacion.innerText = perfil.nombreUsuario;
   if (perfil.fotoURL) {
     avatarNavegacion.innerHTML = `<img src="${perfil.fotoURL}" alt="avatar" />`;
@@ -141,14 +161,17 @@ formularioAsignarNombre.addEventListener("submit", async (evento) => {
     fechaActualizacion: serverTimestamp()
   };
 
+  // Guardar en memoria local inmediatamente para que nunca espere
+  perfilActual = datosPerfil;
+  localStorage.setItem("bloxchat_username_" + usuarioActualAuth.uid, nombreDeseado);
+  actualizarInterfazUsuario(datosPerfil);
+  modalAsignarNombre.classList.add("hidden");
+
+  // Guardar en Firestore
   try {
     await setDoc(doc(baseDatos, "usuarios", usuarioActualAuth.uid), datosPerfil, { merge: true });
-    perfilActual = datosPerfil;
-    actualizarInterfazUsuario(datosPerfil);
-    modalAsignarNombre.classList.add("hidden");
   } catch (error) {
-    console.error("Error al registrar nombre de usuario:", error);
-    alert("No se pudo guardar el nombre de usuario.");
+    console.error("Error al registrar nombre en Firestore:", error);
   }
 });
 
@@ -219,7 +242,7 @@ function dibujarCatalogoSalas() {
   contenedorSalas.innerHTML = "";
   const busqueda = barraBusqueda.value.toLowerCase().trim();
 
-  // Filtrar: ocultar las salas privadas del catálogo público
+  // Ocultar salas privadas del catálogo público
   const salasVisibles = listaSalas.filter(sala => {
     if (sala.esPrivada) return false;
     const coincideCategoria = (filtroCategoriaActual === "all" || sala.categoria === filtroCategoriaActual);
