@@ -192,7 +192,7 @@ const inputCreateRoomGallery = document.getElementById("inputCreateRoomGallery")
 const inputCreateRoomCamera = document.getElementById("inputCreateRoomCamera");
 let nuevaFotoPortadaCreateBase64 = null;
 
-// Chat y bandeja de imagen adjunta
+// Chat y previsualización de imagen adjunta
 const areaMensajes = document.getElementById("messagesArea");
 const campoTextoMensaje = document.getElementById("chatInput");
 const botonEnviarMensaje = document.getElementById("btnSendMessage");
@@ -208,12 +208,12 @@ const chatAttachmentImg = document.getElementById("chatAttachmentImg");
 const btnRemoveChatAttachment = document.getElementById("btnRemoveChatAttachment");
 let fotoPendienteDeEnvioBase64 = null;
 
-// Visor de imagen
+// Visor de imagen a pantalla completa
 const modalImageViewer = document.getElementById("modalImageViewer");
 const fullViewImage = document.getElementById("fullViewImage");
 
 // ==================================================
-// FUNCIÓN UNIVERSAL: COMPRIMIR IMÁGENES (CANVAS)
+// COMPRESIÓN DE IMÁGENES CON CANVAS
 // ==================================================
 function procesarImagenCanvas(archivo, maxAncho, maxAlto, calidad, callback) {
   if (!archivo) return;
@@ -819,9 +819,16 @@ async function unirseASala(idSala) {
         `;
       }
 
+      // 1. Imagen arriba si existe
       let imgHTML = "";
       if (datos.imagenURL) {
         imgHTML = `<img src="${datos.imagenURL}" class="chat-msg-img" alt="Foto adjunta" onclick="window.abrirVisorImagen('${datos.imagenURL}')" />`;
+      }
+
+      // 2. Pie de foto / texto debajo de la imagen
+      let textoHTML = "";
+      if (datos.texto) {
+        textoHTML = `<div class="chat-caption-text">${escaparTextoHTML(datos.texto)}</div>`;
       }
 
       burbuja.innerHTML = `
@@ -838,8 +845,8 @@ async function unirseASala(idSala) {
             ` : ""}
           </div>
         ` : ""}
-        ${datos.texto ? `<div>${escaparTextoHTML(datos.texto)}</div>` : ""}
         ${imgHTML}
+        ${textoHTML}
         <div class="bubble-time">${datos.hora || ""}</div>
       `;
       areaMensajes.appendChild(burbuja);
@@ -857,7 +864,7 @@ window.abrirVisorImagen = function(url) {
 };
 
 // ==================================================
-// BANDEJA ADJUNTA ESTILO WHATSAPP/GEMINI
+// BANDEJA ADJUNTA ESTILO GEMINI / WHATSAPP
 // ==================================================
 function fijarImagenEnBandeja(archivo) {
   if (!archivo) return;
@@ -895,7 +902,7 @@ if (btnRemoveChatAttachment) {
   });
 }
 
-// Enviar Mensaje (Texto + Foto)
+// Enviar Mensaje (Foto arriba + Texto pie de foto)
 async function enviarMensaje() {
   if (!perfilActual) {
     if (modalAutenticacion) modalAutenticacion.classList.remove("hidden");
@@ -916,7 +923,7 @@ async function enviarMensaje() {
   const ahora = new Date();
   const formatoHora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
 
-  // Limpiar controles de inmediato
+  // Limpiar controles de inmediato para respuesta táctil rápida
   if (campoTextoMensaje) campoTextoMensaje.value = "";
   fotoPendienteDeEnvioBase64 = null;
   if (chatAttachmentImg) chatAttachmentImg.src = "";
