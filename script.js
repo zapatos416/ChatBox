@@ -49,7 +49,7 @@ const proveedorGoogle = new GoogleAuthProvider();
 proveedorGoogle.setCustomParameters({ prompt: "select_account" });
 const proveedorFacebook = new FacebookAuthProvider();
 
-// Portada por defecto 100% segura (SVG en Data URI, nunca falla ni depende de internet)
+// Portada por defecto 100% segura (SVG en Data URI, nunca falla)
 const PORTADA_DEFECTO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='350' viewBox='0 0 600 350'><rect width='600' height='350' fill='%23181a20'/><circle cx='300' cy='150' r='60' fill='%2300b06f'/><text x='300' y='165' font-family='sans-serif' font-weight='900' font-size='42' fill='%23ffffff' text-anchor='middle'>BLOX</text><text x='300' y='250' font-family='sans-serif' font-weight='700' font-size='20' fill='%239ca3af' text-anchor='middle'>SALA DE CHAT</text></svg>";
 
 // ==================================================
@@ -161,6 +161,7 @@ const avatarPreviewImg = document.getElementById("avatarPreviewImg");
 const avatarPreviewText = document.getElementById("avatarPreviewText");
 const inputGaleria = document.getElementById("inputAvatarGallery");
 const inputCamara = document.getElementById("inputAvatarCamera");
+const btnSwitchAccount = document.getElementById("btnSwitchAccount");
 
 let nuevaFotoTemporalBase64 = null;
 const DIAS_ENFRIAMIENTO = 60;
@@ -342,7 +343,7 @@ function actualizarInterfazUsuario(perfil) {
 }
 
 // ==================================================
-// PERFIL (FOTO CÁMARA/GALERÍA + 60 DÍAS)
+// PERFIL Y OPCIÓN DE CAMBIAR DE CUENTA
 // ==================================================
 if (tarjetaPerfilUsuario) {
   tarjetaPerfilUsuario.addEventListener("click", (evento) => {
@@ -382,6 +383,18 @@ if (tarjetaPerfilUsuario) {
     }
 
     modalPerfil.classList.remove("hidden");
+  });
+}
+
+// CAMBIAR DE CUENTA DESDE EL MODAL DE PERFIL
+if (btnSwitchAccount) {
+  btnSwitchAccount.addEventListener("click", async () => {
+    if (modalPerfil) modalPerfil.classList.add("hidden");
+    await signOut(autenticacion);
+    if (idSalaActual && botonSalirSala) botonSalirSala.click();
+
+    // Abrir inmediatamente el modal de inicio de sesión
+    if (modalAutenticacion) modalAutenticacion.classList.remove("hidden");
   });
 }
 
@@ -660,7 +673,7 @@ window.ejecutarSancion = async function(uidABanear, nombreABanear) {
 };
 
 // ==================================================
-// CATÁLOGO DE SALAS (CON PROTECCIÓN CONTRA IMÁGENES ROTAS)
+// CATÁLOGO DE SALAS PÚBLICAS EN TIEMPO REAL
 // ==================================================
 const refColeccionSalas = collection(baseDatos, "salas");
 
@@ -866,7 +879,6 @@ async function unirseASala(idSala) {
   });
 }
 
-// Abrir imagen en pantalla completa
 window.abrirVisorImagen = function(url) {
   if (fullViewImage && modalImageViewer) {
     fullViewImage.src = url;
