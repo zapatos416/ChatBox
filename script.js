@@ -49,6 +49,9 @@ const proveedorGoogle = new GoogleAuthProvider();
 proveedorGoogle.setCustomParameters({ prompt: "select_account" });
 const proveedorFacebook = new FacebookAuthProvider();
 
+// Portada por defecto 100% segura (SVG en Data URI, nunca falla ni depende de internet)
+const PORTADA_DEFECTO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='350' viewBox='0 0 600 350'><rect width='600' height='350' fill='%23181a20'/><circle cx='300' cy='150' r='60' fill='%2300b06f'/><text x='300' y='165' font-family='sans-serif' font-weight='900' font-size='42' fill='%23ffffff' text-anchor='middle'>BLOX</text><text x='300' y='250' font-family='sans-serif' font-weight='700' font-size='20' fill='%239ca3af' text-anchor='middle'>SALA DE CHAT</text></svg>";
+
 // ==================================================
 // CONTROL JERÁRQUICO: OWNER SUPREMO Y MODS GLOBALES
 // ==================================================
@@ -208,12 +211,12 @@ const chatAttachmentImg = document.getElementById("chatAttachmentImg");
 const btnRemoveChatAttachment = document.getElementById("btnRemoveChatAttachment");
 let fotoPendienteDeEnvioBase64 = null;
 
-// Visor de imagen a pantalla completa
+// Visor de imagen
 const modalImageViewer = document.getElementById("modalImageViewer");
 const fullViewImage = document.getElementById("fullViewImage");
 
 // ==================================================
-// COMPRESIÓN DE IMÁGENES CON CANVAS
+// FUNCIÓN UNIVERSAL: COMPRESIÓN DE IMÁGENES
 // ==================================================
 function procesarImagenCanvas(archivo, maxAncho, maxAlto, calidad, callback) {
   if (!archivo) return;
@@ -657,7 +660,7 @@ window.ejecutarSancion = async function(uidABanear, nombreABanear) {
 };
 
 // ==================================================
-// CATÁLOGO DE SALAS PÚBLICAS EN TIEMPO REAL
+// CATÁLOGO DE SALAS (CON PROTECCIÓN CONTRA IMÁGENES ROTAS)
 // ==================================================
 const refColeccionSalas = collection(baseDatos, "salas");
 
@@ -689,11 +692,13 @@ function dibujarCatalogoSalas() {
 
   salasVisibles.forEach(sala => {
     const registrados = Array.isArray(sala.usuariosRegistrados) ? sala.usuariosRegistrados.length : 1;
+    const portadaSegura = (sala.imagen && sala.imagen.trim().length > 10) ? sala.imagen : PORTADA_DEFECTO;
+
     const tarjeta = document.createElement("div");
     tarjeta.className = "room-card";
     tarjeta.innerHTML = `
       <div class="card-thumb">
-        <img src="${sala.imagen || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600'}" alt="${escaparTextoHTML(sala.titulo)}" loading="lazy" />
+        <img src="${portadaSegura}" alt="${escaparTextoHTML(sala.titulo)}" loading="lazy" onerror="this.onerror=null; this.src='${PORTADA_DEFECTO}';" />
         <span class="room-registered-badge">
           <i class="fa-solid fa-users"></i> ${registrados} registrados
         </span>
@@ -718,8 +723,12 @@ function abrirDetallesSala(sala) {
   const modalRegisteredCount = document.getElementById("modalRegisteredCount");
 
   const registrados = Array.isArray(sala.usuariosRegistrados) ? sala.usuariosRegistrados.length : 1;
+  const portadaSegura = (sala.imagen && sala.imagen.trim().length > 10) ? sala.imagen : PORTADA_DEFECTO;
 
-  if (modalImg) modalImg.src = sala.imagen;
+  if (modalImg) {
+    modalImg.src = portadaSegura;
+    modalImg.onerror = () => { modalImg.src = PORTADA_DEFECTO; };
+  }
   if (modalTitle) modalTitle.innerText = sala.titulo;
   if (modalDesc) modalDesc.innerText = sala.descripcion;
   if (modalCategory) modalCategory.innerText = (sala.categoria || "GENERAL").toUpperCase();
@@ -753,7 +762,6 @@ async function unirseASala(idSala) {
   idSalaActual = idSala;
   salaActualData = sala;
 
-  // Registrar usuario en la lista de miembros de la sala
   if (usuarioActualAuth) {
     try {
       await updateDoc(doc(baseDatos, "salas", idSala), {
@@ -778,7 +786,10 @@ async function unirseASala(idSala) {
 
     salaActualData = { id: docSnap.id, ...docSnap.data() };
     if (tituloSalaChat) tituloSalaChat.innerText = salaActualData.titulo;
-    if (imagenSalaChat) imagenSalaChat.src = salaActualData.imagen;
+    if (imagenSalaChat) {
+      imagenSalaChat.src = (salaActualData.imagen && salaActualData.imagen.trim().length > 10) ? salaActualData.imagen : PORTADA_DEFECTO;
+      imagenSalaChat.onerror = () => { imagenSalaChat.src = PORTADA_DEFECTO; };
+    }
 
     if (salaActualData.esPrivada && usuarioActualAuth && Array.isArray(salaActualData.bloqueados) && salaActualData.bloqueados.includes(usuarioActualAuth.uid)) {
       alert("Has sido bloqueado de esta sala.");
@@ -923,7 +934,6 @@ async function enviarMensaje() {
   const ahora = new Date();
   const formatoHora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
 
-  // Limpiar controles de inmediato para respuesta táctil rápida
   if (campoTextoMensaje) campoTextoMensaje.value = "";
   fotoPendienteDeEnvioBase64 = null;
   if (chatAttachmentImg) chatAttachmentImg.src = "";
@@ -1066,7 +1076,9 @@ if (btnOpenRoomSettings) {
     nuevaFotoPortadaEditBase64 = null;
     if (editRoomTitle) editRoomTitle.value = salaActualData.titulo || "";
     if (editRoomDesc) editRoomDesc.value = salaActualData.descripcion || "";
-    if (editRoomPreviewImg) editRoomPreviewImg.src = salaActualData.imagen || "";
+    if (editRoomPreviewImg) {
+      editRoomPreviewImg.src = (salaActualData.imagen && salaActualData.imagen.trim().length > 10) ? salaActualData.imagen : PORTADA_DEFECTO;
+    }
 
     if (editPasswordContainer && editRoomPass) {
       if (salaActualData.esPrivada) {
@@ -1089,7 +1101,7 @@ if (formEditRoom) {
     const datosActualizados = {
       titulo: editRoomTitle ? editRoomTitle.value.trim() : salaActualData.titulo,
       descripcion: editRoomDesc ? editRoomDesc.value.trim() : salaActualData.descripcion,
-      imagen: nuevaFotoPortadaEditBase64 || salaActualData.imagen
+      imagen: nuevaFotoPortadaEditBase64 || salaActualData.imagen || PORTADA_DEFECTO
     };
 
     if (salaActualData.esPrivada && editRoomPass && editRoomPass.value.trim()) {
@@ -1144,7 +1156,7 @@ if (btnOpenCreate) {
     }
     nuevaFotoPortadaCreateBase64 = null;
     if (formCreateRoom) formCreateRoom.reset();
-    if (createRoomPreviewImg) createRoomPreviewImg.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600";
+    if (createRoomPreviewImg) createRoomPreviewImg.src = PORTADA_DEFECTO;
     const passwordGroup = document.getElementById("passwordGroup");
     if (passwordGroup) passwordGroup.classList.add("hidden");
     if (modalCrearSala) modalCrearSala.classList.remove("hidden");
@@ -1175,7 +1187,6 @@ if (formCreateRoom) {
     const clave = document.getElementById("createPassword") ? document.getElementById("createPassword").value.trim() : null;
 
     const idGenerado = (esPrivada ? "VIP-" : "SALA-") + Math.floor(1000 + Math.random() * 9000);
-    const imagenDefecto = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600";
 
     const datosSala = {
       titulo: titulo,
@@ -1188,7 +1199,7 @@ if (formCreateRoom) {
       admins: [],
       bloqueados: [],
       usuariosRegistrados: [perfilActual.idUsuario],
-      imagen: nuevaFotoPortadaCreateBase64 || imagenDefecto,
+      imagen: nuevaFotoPortadaCreateBase64 || PORTADA_DEFECTO,
       fechaCreacion: serverTimestamp()
     };
 
