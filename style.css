@@ -581,7 +581,7 @@ body {
 }
 
 .chat-sidebar {
-  width: 250px;
+  width: 260px;
   background: var(--bg-input);
   border-left: 1px solid var(--border-color);
   padding: 16px;
@@ -603,9 +603,46 @@ body {
 .participant-item {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   font-size: 0.88rem;
   font-weight: 600;
+}
+
+/* ==================================================
+   EXCLUSIVO OWNER: ETIQUETAS DE ID Y ACCIONES
+   ================================================== */
+.owner-user-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: monospace;
+  margin-left: 6px;
+}
+
+.btn-owner-action-id {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: #ffb703;
+  font-size: 0.65rem;
+  padding: 2px 5px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  transition: 0.2s all;
+}
+
+.btn-owner-action-id:hover {
+  background: #ffb703;
+  color: #000;
 }
 
 /* ==================================================
@@ -725,7 +762,6 @@ body {
   transform: translateX(20px);
 }
 
-/* Botones de Login */
 .auth-buttons {
   display: flex;
   flex-direction: column;
@@ -763,7 +799,6 @@ body {
   font-weight: 700;
 }
 
-/* Modal Detalles de Sala */
 .modal-banner img {
   width: 100%;
   height: 180px;
@@ -877,7 +912,6 @@ body {
   font-weight: 700;
 }
 
-/* Pantalla de baneo total */
 .banned-screen {
   position: fixed;
   inset: 0;
@@ -952,7 +986,6 @@ body {
     gap: 14px;
   }
 
-  /* Chatroom en celular: Pantalla Completa estilo App Nativa */
   .chat-container {
     position: fixed;
     inset: 0;
@@ -978,7 +1011,7 @@ body {
   }
 
   .chat-sidebar {
-    display: none !important; /* Oculta la columna de usuarios para dar espacio al chat */
+    display: none !important;
   }
 
   .messages-area {
@@ -998,7 +1031,7 @@ body {
   }
 
   .chat-input-bar input {
-    font-size: 15px; /* Evita que Safari en iOS haga zoom automático */
+    font-size: 15px;
     border-radius: 20px;
     padding: 8px 14px;
   }
@@ -1009,7 +1042,6 @@ body {
     border-radius: 50%;
   }
 
-  /* Modales estilo Bottom Sheet */
   .modal-overlay {
     align-items: flex-end;
     padding: 0;
