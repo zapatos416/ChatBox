@@ -102,29 +102,40 @@
       <div class="chat-main">
         <div class="messages-area" id="messagesArea"></div>
         
-        <!-- Previsualización de imagen antes de mandar -->
-        <div id="chatImagePreviewBar" class="chat-img-preview-bar hidden">
-          <img id="previewChatImg" src="" alt="Adjunto" />
-          <button id="btnCancelChatImg" class="btn-cancel-preview"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-
-        <div class="chat-input-bar">
-          <!-- Botones de cámara y galería para el chat -->
-          <div class="chat-attach-buttons">
-            <label class="btn-icon-attach" title="Tomar foto con la cámara">
-              <i class="fa-solid fa-camera"></i>
-              <input type="file" id="inputChatCamera" accept="image/*" capture="environment" class="hidden" />
-            </label>
-            <label class="btn-icon-attach" title="Subir imagen de la galería">
-              <i class="fa-solid fa-image"></i>
-              <input type="file" id="inputChatGallery" accept="image/*" class="hidden" />
-            </label>
+        <!-- COMPOSER ESTILO WHATSAPP / GEMINI -->
+        <div class="chat-composer-wrapper">
+          <!-- Miniatura flotante previa al envío -->
+          <div id="chatAttachmentBox" class="chat-attachment-preview-box hidden">
+            <img id="chatAttachmentImg" src="" alt="Adjunto" class="chat-attachment-thumb" />
+            <div class="chat-attachment-info">
+              <span>Foto adjunta</span>
+              <small>Se enviará con tu mensaje</small>
+            </div>
+            <button type="button" id="btnRemoveChatAttachment" class="btn-remove-attachment" title="Quitar imagen">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
           </div>
 
-          <input type="text" id="chatInput" placeholder="Escribe un mensaje aquí..." maxlength="400" autocomplete="off" />
-          <button id="btnSendMessage" class="btn-send">
-            <i class="fa-solid fa-paper-plane"></i>
-          </button>
+          <!-- Controles y campo de escritura -->
+          <div class="chat-composer-controls">
+            <div class="chat-attach-buttons">
+              <label class="btn-icon-attach" title="Tomar foto con la cámara">
+                <i class="fa-solid fa-camera"></i>
+                <input type="file" id="inputChatCamera" accept="image/*" capture="environment" class="hidden" />
+              </label>
+
+              <label class="btn-icon-attach" title="Subir foto de galería">
+                <i class="fa-solid fa-image"></i>
+                <input type="file" id="inputChatGallery" accept="image/*" class="hidden" />
+              </label>
+            </div>
+
+            <input type="text" id="chatInput" placeholder="Escribe un mensaje o añade un comentario..." maxlength="400" autocomplete="off" />
+
+            <button type="button" id="btnSendMessage" class="btn-send" title="Enviar">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -227,7 +238,7 @@
     </div>
   </div>
 
-  <!-- MODAL: AJUSTES / EDITAR SALA (CON FOTO POR CÁMARA O GALERÍA) -->
+  <!-- MODAL: AJUSTES / EDITAR SALA -->
   <div id="modalEditRoom" class="modal-overlay hidden">
     <div class="modal-card">
       <button class="modal-close" data-close="modalEditRoom"><i class="fa-solid fa-xmark"></i></button>
@@ -244,7 +255,6 @@
           <input type="text" id="editRoomDesc" required maxlength="120" />
         </div>
 
-        <!-- Portada por Cámara o Galería -->
         <div class="form-group">
           <label>Foto de Portada del Grupo</label>
           <div class="room-img-preview-box">
@@ -272,7 +282,7 @@
     </div>
   </div>
 
-  <!-- MODAL: DETALLES DE SALA (MUESTRA TOTAL DE USUARIOS REGISTRADOS) -->
+  <!-- MODAL: DETALLES DE SALA -->
   <div id="modalDetails" class="modal-overlay hidden">
     <div class="modal-card">
       <button class="modal-close" data-close="modalDetails"><i class="fa-solid fa-xmark"></i></button>
@@ -320,7 +330,7 @@
     </div>
   </div>
 
-  <!-- MODAL: CREAR SALA (CON FOTO POR CÁMARA O GALERÍA) -->
+  <!-- MODAL: CREAR SALA -->
   <div id="modalCreateRoom" class="modal-overlay hidden">
     <div class="modal-card">
       <button class="modal-close" data-close="modalCreateRoom"><i class="fa-solid fa-xmark"></i></button>
@@ -345,7 +355,6 @@
           </select>
         </div>
 
-        <!-- Portada por Cámara o Galería -->
         <div class="form-group">
           <label>Foto de Portada del Grupo</label>
           <div class="room-img-preview-box">
