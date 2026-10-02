@@ -136,7 +136,6 @@ body {
   gap: 10px;
 }
 
-/* Botones */
 .btn {
   border: none;
   padding: 8px 16px;
@@ -213,7 +212,6 @@ body {
   box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
-/* Chip de usuario */
 .user-chip {
   display: flex;
   align-items: center;
@@ -260,7 +258,6 @@ body {
   color: var(--danger-color);
 }
 
-/* Insignias de Rango */
 .badge-owner {
   background: linear-gradient(135deg, #ffd700, #ff8c00);
   color: #000;
@@ -552,54 +549,63 @@ body {
   font-size: 0.75rem;
   font-weight: 800;
   color: #3a86ff;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 
 .bubble-time {
   font-size: 0.65rem;
   opacity: 0.7;
   text-align: right;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
+/* Imagen en el mensaje (arriba) */
 .chat-msg-img {
   max-width: 100%;
-  max-height: 220px;
+  max-height: 280px;
   border-radius: 8px;
-  margin-top: 6px;
-  cursor: pointer;
   display: block;
   object-fit: cover;
+  cursor: pointer;
   transition: opacity 0.2s;
 }
 
 .chat-msg-img:hover {
-  opacity: 0.9;
+  opacity: 0.92;
+}
+
+/* Pie de foto debajo de la imagen */
+.chat-caption-text {
+  margin-top: 6px;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  word-break: break-word;
 }
 
 /* ==================================================
-   COMPOSER DE CHAT ESTILO WHATSAPP / GEMINI
+   COMPOSER DE ENTRADA Y PREVISUALIZACIÓN ESTILO GEMINI
    ================================================== */
 .chat-composer-wrapper {
   background: var(--bg-input);
   border-top: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  padding: 8px 14px;
+  padding: 10px 16px;
   gap: 8px;
 }
 
+/* Miniatura flotante previa al envío */
 .chat-attachment-preview-box {
   display: inline-flex;
   align-items: center;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  padding: 6px 10px;
+  padding: 6px 12px;
   border-radius: 12px;
   width: fit-content;
   max-width: 100%;
-  gap: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  gap: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
   animation: fadeInAttachment 0.2s ease-out;
 }
 
@@ -609,8 +615,8 @@ body {
 }
 
 .chat-attachment-thumb {
-  width: 54px;
-  height: 54px;
+  width: 56px;
+  height: 56px;
   border-radius: 8px;
   object-fit: cover;
   border: 1px solid var(--border-color);
@@ -623,29 +629,29 @@ body {
 }
 
 .chat-attachment-info span {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--text-main);
 }
 
 .chat-attachment-info small {
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
 }
 
 .btn-remove-attachment {
-  background: rgba(217, 4, 41, 0.15);
+  background: rgba(217, 4, 41, 0.2);
   border: none;
   color: var(--danger-color);
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
-  transition: 0.2s background;
+  font-size: 0.85rem;
+  transition: 0.2s background, 0.2s color;
 }
 
 .btn-remove-attachment:hover {
@@ -653,10 +659,11 @@ body {
   color: #fff;
 }
 
+/* Fila de controles y campo */
 .chat-composer-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   width: 100%;
 }
 
