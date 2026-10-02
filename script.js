@@ -16,7 +16,8 @@ import {
   query, 
   where,
   orderBy, 
-  serverTimestamp 
+  serverTimestamp,
+  arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import {
   getAuth,
@@ -38,7 +39,6 @@ const configuracionFirebase = {
   measurementId: "G-9XSJF699P3"
 };
 
-// Inicialización de Firebase
 const app = initializeApp(configuracionFirebase);
 const baseDatos = getFirestore(app);
 const autenticacion = getAuth(app);
@@ -65,7 +65,6 @@ let miIPActual = null;
 let ipsBaneadas = new Set();
 let uidsBaneados = new Set();
 
-// Detección automática de la IP del dispositivo
 async function capturarIPVisitante() {
   try {
     const respuesta = await fetch("https://api.ipify.org?format=json");
@@ -78,26 +77,21 @@ async function capturarIPVisitante() {
 }
 capturarIPVisitante();
 
-// Escuchar lista negra de IPs
 onSnapshot(collection(baseDatos, "ips_baneadas"), (snap) => {
   ipsBaneadas.clear();
   snap.forEach(docIP => ipsBaneadas.add(docIP.id));
   verificarBaneo();
 });
 
-// Escuchar lista negra de Cuentas
 onSnapshot(collection(baseDatos, "baneados"), (snap) => {
   uidsBaneados.clear();
   snap.forEach(docBan => uidsBaneados.add(docBan.id));
   verificarBaneo();
 });
 
-// Escuchar Moderadores Globales
 onSnapshot(collection(baseDatos, "moderadores_globales"), (snap) => {
   listaModsGlobales.clear();
-  snap.forEach(docMod => {
-    listaModsGlobales.set(docMod.id, docMod.data());
-  });
+  snap.forEach(docMod => listaModsGlobales.set(docMod.id, docMod.data()));
 
   if (usuarioActualAuth) {
     esModGlobal = listaModsGlobales.has(usuarioActualAuth.uid);
@@ -136,7 +130,7 @@ let filtroCategoriaActual = "all";
 let cancelarEscuchaMensajes = null;
 let cancelarEscuchaSalaActual = null;
 
-// Elementos DOM (con asignación segura)
+// Elementos DOM
 const vistaCatalogo = document.getElementById("catalogView");
 const vistaChat = document.getElementById("chatView");
 const contenedorSalas = document.getElementById("roomsGrid");
@@ -155,9 +149,9 @@ const botonIngresoFacebook = document.getElementById("btnLoginFacebook");
 const textoErrorAuth = document.getElementById("authErrorMsg");
 
 // Modal de Perfil
-const modalPerfil = document.getElementById("modalUserProfile") || document.getElementById("modalSetUsername");
-const formPerfil = document.getElementById("formUserProfile") || document.getElementById("formSetUsername");
-const campoNombrePerfil = document.getElementById("profileUsernameInput") || document.getElementById("customUsernameInput");
+const modalPerfil = document.getElementById("modalUserProfile");
+const formPerfil = document.getElementById("formUserProfile");
+const campoNombrePerfil = document.getElementById("profileUsernameInput");
 const avisoEnfriamiento = document.getElementById("usernameCooldownNotice");
 const textoDiasRestantes = document.getElementById("daysRemainingText");
 const avatarPreviewImg = document.getElementById("avatarPreviewImg");
@@ -182,15 +176,23 @@ const modalEditRoom = document.getElementById("modalEditRoom");
 const formEditRoom = document.getElementById("formEditRoom");
 const editRoomTitle = document.getElementById("editRoomTitle");
 const editRoomDesc = document.getElementById("editRoomDesc");
-const editRoomImg = document.getElementById("editRoomImg");
+const editRoomPreviewImg = document.getElementById("editRoomPreviewImg");
+const inputEditRoomGallery = document.getElementById("inputEditRoomGallery");
+const inputEditRoomCamera = document.getElementById("inputEditRoomCamera");
 const editPasswordContainer = document.getElementById("editPasswordContainer");
 const editRoomPass = document.getElementById("editRoomPass");
+let nuevaFotoPortadaEditBase64 = null;
 
 // Modales del sistema
 const modalDetallesSala = document.getElementById("modalDetails");
 const modalUnirsePrivada = document.getElementById("modalPrivateJoin");
 const modalCrearSala = document.getElementById("modalCreateRoom");
+const createRoomPreviewImg = document.getElementById("createRoomPreviewImg");
+const inputCreateRoomGallery = document.getElementById("inputCreateRoomGallery");
+const inputCreateRoomCamera = document.getElementById("inputCreateRoomCamera");
+let nuevaFotoPortadaCreateBase64 = null;
 
+// Chat y adjuntos de imagen
 const areaMensajes = document.getElementById("messagesArea");
 const campoTextoMensaje = document.getElementById("chatInput");
 const botonEnviarMensaje = document.getElementById("btnSendMessage");
@@ -198,6 +200,53 @@ const botonSalirSala = document.getElementById("btnLeaveRoom");
 const tituloSalaChat = document.getElementById("chatRoomTitle");
 const imagenSalaChat = document.getElementById("chatRoomImg");
 const listaParticipantes = document.getElementById("participantsList");
+
+const inputChatCamera = document.getElementById("inputChatCamera");
+const inputChatGallery = document.getElementById("inputChatGallery");
+const chatImagePreviewBar = document.getElementById("chatImagePreviewBar");
+const previewChatImg = document.getElementById("previewChatImg");
+const btnCancelChatImg = document.getElementById("btnCancelChatImg");
+let imagenAdjuntaChatBase64 = null;
+
+// Visor de imagen
+const modalImageViewer = document.getElementById("modalImageViewer");
+const fullViewImage = document.getElementById("fullViewImage");
+
+// ==================================================
+// FUNCIÓN UNIVERSAL: COMPRIMIR IMÁGENES (CANVAS)
+// ==================================================
+function procesarImagenCanvas(archivo, maxAncho, maxAlto, calidad, callback) {
+  if (!archivo) return;
+  const lector = new FileReader();
+  lector.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width;
+      let h = img.height;
+
+      if (w > maxAncho || h > maxAlto) {
+        if (w > h) {
+          h = Math.round((h * maxAncho) / w);
+          w = maxAncho;
+        } else {
+          w = Math.round((w * maxAlto) / h);
+          h = maxAlto;
+        }
+      }
+
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+
+      const resultadoBase64 = canvas.toDataURL("image/jpeg", calidad);
+      callback(resultadoBase64);
+    };
+    img.src = e.target.result;
+  };
+  lector.readAsDataURL(archivo);
+}
 
 // ==================================================
 // CONTROL DE AUTENTICACIÓN
@@ -290,7 +339,7 @@ function actualizarInterfazUsuario(perfil) {
 }
 
 // ==================================================
-// EVENTOS DE PERFIL (FOTO Y APODO)
+// PERFIL (FOTO CÁMARA/GALERÍA + 60 DÍAS)
 // ==================================================
 if (tarjetaPerfilUsuario) {
   tarjetaPerfilUsuario.addEventListener("click", (evento) => {
@@ -333,47 +382,28 @@ if (tarjetaPerfilUsuario) {
   });
 }
 
-function procesarImagenSeleccionada(archivo) {
-  if (!archivo) return;
-
-  const lector = new FileReader();
-  lector.onload = (e) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      const tamano = 200;
-
-      canvas.width = tamano;
-      canvas.height = tamano;
-
-      const minLado = Math.min(img.width, img.height);
-      const startX = (img.width - minLado) / 2;
-      const startY = (img.height - minLado) / 2;
-
-      ctx.drawImage(img, startX, startY, minLado, minLado, 0, 0, tamano, tamano);
-      nuevaFotoTemporalBase64 = canvas.toDataURL("image/jpeg", 0.82);
-
-      if (avatarPreviewImg && avatarPreviewText) {
-        avatarPreviewImg.src = nuevaFotoTemporalBase64;
-        avatarPreviewImg.classList.remove("hidden");
-        avatarPreviewText.classList.add("hidden");
-      }
-    };
-    img.src = e.target.result;
-  };
-  lector.readAsDataURL(archivo);
+function actualizarAvatarPerfilModal(base64) {
+  nuevaFotoTemporalBase64 = base64;
+  if (avatarPreviewImg && avatarPreviewText) {
+    avatarPreviewImg.src = base64;
+    avatarPreviewImg.classList.remove("hidden");
+    avatarPreviewText.classList.add("hidden");
+  }
 }
 
 if (inputGaleria) {
   inputGaleria.addEventListener("change", (e) => {
-    if (e.target.files && e.target.files[0]) procesarImagenSeleccionada(e.target.files[0]);
+    if (e.target.files && e.target.files[0]) {
+      procesarImagenCanvas(e.target.files[0], 250, 250, 0.85, actualizarAvatarPerfilModal);
+    }
   });
 }
 
 if (inputCamara) {
   inputCamara.addEventListener("change", (e) => {
-    if (e.target.files && e.target.files[0]) procesarImagenSeleccionada(e.target.files[0]);
+    if (e.target.files && e.target.files[0]) {
+      procesarImagenCanvas(e.target.files[0], 250, 250, 0.85, actualizarAvatarPerfilModal);
+    }
   });
 }
 
@@ -403,15 +433,17 @@ if (formPerfil) {
       perfilActual = { ...perfilActual, ...datosActualizados };
       actualizarInterfazUsuario(perfilActual);
       if (modalPerfil) modalPerfil.classList.add("hidden");
-      alert("¡Perfil actualizado con éxito!");
+      alert("¡Perfil actualizado!");
     } catch (error) {
       console.error("Error al actualizar perfil:", error);
-      alert("Hubo un fallo al guardar los cambios.");
+      alert("Hubo un fallo al guardar.");
     }
   });
 }
 
-// Botones de autenticación
+// ==================================================
+// AUTENTICACIÓN
+// ==================================================
 if (botonIngresoGoogle) {
   botonIngresoGoogle.addEventListener("click", async () => {
     if (textoErrorAuth) textoErrorAuth.classList.add("hidden");
@@ -457,7 +489,7 @@ if (botonAbrirAuth) {
 }
 
 // ==================================================
-// FUNCIONES EXCLUSIVAS DEL OWNER: COPIAR ID Y ASCENDER
+// COPIAR ID Y ASCENDER DIRECTO (OWNER)
 // ==================================================
 window.copiarUID = function(uid) {
   navigator.clipboard.writeText(uid);
@@ -466,16 +498,8 @@ window.copiarUID = function(uid) {
 
 window.promoverAModDirecto = async function(uidObjetivo, nombreObjetivo) {
   if (!esOwnerSupremo) return;
-
-  if (uidObjetivo === usuarioActualAuth.uid) {
-    alert("Tú ya eres el Owner Supremo.");
-    return;
-  }
-
-  if (listaModsGlobales.has(uidObjetivo)) {
-    alert(`@${nombreObjetivo} ya es Moderador Global.`);
-    return;
-  }
+  if (uidObjetivo === usuarioActualAuth.uid) return alert("Tú ya eres el Owner Supremo.");
+  if (listaModsGlobales.has(uidObjetivo)) return alert(`@${nombreObjetivo} ya es Moderador Global.`);
 
   const confirmar = confirm(`¿Deseas ascender a "@${nombreObjetivo}" a Moderador Global de BloxChat?`);
   if (!confirmar) return;
@@ -493,9 +517,6 @@ window.promoverAModDirecto = async function(uidObjetivo, nombreObjetivo) {
   }
 };
 
-// ==================================================
-// PANEL DE CONTROL DEL OWNER (GESTIÓN DE MODS)
-// ==================================================
 if (btnOpenOwnerPanel) {
   btnOpenOwnerPanel.addEventListener("click", () => {
     if (!esOwnerSupremo) return;
@@ -542,18 +563,12 @@ if (btnAddModGlobal) {
       if (identificador.includes("@")) {
         const q = query(collection(baseDatos, "usuarios"), where("correo", "==", identificador.toLowerCase()));
         const snap = await getDocs(q);
-        if (snap.empty) {
-          alert("No se encontró ningún usuario registrado con ese correo.");
-          return;
-        }
+        if (snap.empty) return alert("No se encontró usuario con ese correo.");
         uidObjetivo = snap.docs[0].id;
         datosUsuario = snap.docs[0].data();
       }
 
-      if (uidObjetivo === usuarioActualAuth.uid) {
-        alert("Tú ya eres el Owner Supremo.");
-        return;
-      }
+      if (uidObjetivo === usuarioActualAuth.uid) return alert("Tú ya eres el Owner Supremo.");
 
       await setDoc(doc(baseDatos, "moderadores_globales", uidObjetivo), {
         nombreUsuario: datosUsuario.nombreUsuario || "Moderador",
@@ -565,15 +580,14 @@ if (btnAddModGlobal) {
       newModInput.value = "";
       alert(`Rango de Moderador Global otorgado.`);
     } catch (error) {
-      console.error("Error al asignar moderador:", error);
-      alert("Error al otorgar rango.");
+      console.error("Error al asignar mod:", error);
     }
   });
 }
 
 window.revocarModGlobal = async function(uidMod, nombreMod) {
   if (!esOwnerSupremo) return;
-  const confirmar = confirm(`¿Deseas quitar el rango a "${nombreMod}"? Perderá todos sus poderes de moderación.`);
+  const confirmar = confirm(`¿Deseas quitar el rango a "${nombreMod}"?`);
   if (!confirmar) return;
 
   try {
@@ -584,36 +598,25 @@ window.revocarModGlobal = async function(uidMod, nombreMod) {
   }
 };
 
-// ==================================================
-// SANCIONES Y PURGAS (OWNER Y MODS GLOBALES)
-// ==================================================
 window.ejecutarSancion = async function(uidABanear, nombreABanear) {
-  if (!esOwnerSupremo && !esModGlobal) {
-    alert("No tienes rango para aplicar sanciones globales.");
-    return;
-  }
+  if (!esOwnerSupremo && !esModGlobal) return alert("No tienes rango de moderador global.");
 
   const docInfractor = await getDoc(doc(baseDatos, "usuarios", uidABanear));
   const correoInfractor = (docInfractor.exists() && docInfractor.data().correo) ? docInfractor.data().correo.toLowerCase() : "";
   
   if (CORREOS_OWNER.includes(correoInfractor) || uidABanear === usuarioActualAuth.uid) {
-    alert("ACCESO DENEGADO: El Creador y Owner Supremo es intocable.");
-    return;
+    return alert("ACCESO DENEGADO: El Creador y Owner Supremo es intocable.");
   }
 
   if (!esOwnerSupremo && listaModsGlobales.has(uidABanear)) {
-    alert("Un Moderador Global no puede sancionar a otro Moderador Global.");
-    return;
+    return alert("Un Moderador Global no puede sancionar a otro Moderador Global.");
   }
 
-  const confirmar = confirm(`¿Confirmar baneo definitivo y purga para "${nombreABanear}"?\n\n- Se vetará su cuenta.\n- Se bloqueará su IP.\n- Se borrarán todos sus mensajes de esta sala.`);
+  const confirmar = confirm(`¿Confirmar baneo definitivo y purga para "${nombreABanear}"?`);
   if (!confirmar) return;
 
   try {
-    let ipInfractor = null;
-    if (docInfractor.exists() && docInfractor.data().ultimaIP) {
-      ipInfractor = docInfractor.data().ultimaIP;
-    }
+    let ipInfractor = (docInfractor.exists() && docInfractor.data().ultimaIP) ? docInfractor.data().ultimaIP : null;
 
     await setDoc(doc(baseDatos, "baneados", uidABanear), {
       nombreUsuario: nombreABanear,
@@ -641,16 +644,15 @@ window.ejecutarSancion = async function(uidABanear, nombreABanear) {
 
       await addDoc(refMensajesSala, {
         nombreUsuario: "🛡️ SISTEMA",
-        texto: `El usuario @${nombreABanear} fue sancionado por ${esOwnerSupremo ? "el Creador Supremo" : "la Moderación Global"}. Sus mensajes han sido purgados.`,
+        texto: `El usuario @${nombreABanear} fue sancionado por ${esOwnerSupremo ? "el Creador Supremo" : "la Moderación Global"}. Mensajes purgados.`,
         hora: "Ahora",
         fechaCreacion: serverTimestamp()
       });
     }
 
-    alert(`Sanción y purga aplicadas con éxito a ${nombreABanear}.`);
+    alert(`Sanción aplicada a ${nombreABanear}.`);
   } catch (error) {
-    console.error("Error al aplicar sanción:", error);
-    alert("Fallo al procesar la sanción.");
+    console.error("Error al sancionar:", error);
   }
 };
 
@@ -665,8 +667,6 @@ onSnapshot(refColeccionSalas, (instantanea) => {
     listaSalas.push({ id: docSala.id, ...docSala.data() });
   });
   dibujarCatalogoSalas();
-}, (error) => {
-  console.error("Error al escuchar salas:", error);
 });
 
 function dibujarCatalogoSalas() {
@@ -688,11 +688,15 @@ function dibujarCatalogoSalas() {
   }
 
   salasVisibles.forEach(sala => {
+    const registrados = Array.isArray(sala.usuariosRegistrados) ? sala.usuariosRegistrados.length : 1;
     const tarjeta = document.createElement("div");
     tarjeta.className = "room-card";
     tarjeta.innerHTML = `
       <div class="card-thumb">
         <img src="${sala.imagen || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600'}" alt="${escaparTextoHTML(sala.titulo)}" loading="lazy" />
+        <span class="room-registered-badge">
+          <i class="fa-solid fa-users"></i> ${registrados} registrados
+        </span>
       </div>
       <div class="card-content">
         <h3 class="card-title">${escaparTextoHTML(sala.titulo)}</h3>
@@ -711,12 +715,17 @@ function abrirDetallesSala(sala) {
   const modalDesc = document.getElementById("modalDesc");
   const modalCategory = document.getElementById("modalCategory");
   const modalCode = document.getElementById("modalCode");
+  const modalRegisteredCount = document.getElementById("modalRegisteredCount");
+
+  const registrados = Array.isArray(sala.usuariosRegistrados) ? sala.usuariosRegistrados.length : 1;
 
   if (modalImg) modalImg.src = sala.imagen;
   if (modalTitle) modalTitle.innerText = sala.titulo;
   if (modalDesc) modalDesc.innerText = sala.descripcion;
   if (modalCategory) modalCategory.innerText = (sala.categoria || "GENERAL").toUpperCase();
   if (modalCode) modalCode.innerText = sala.id;
+  if (modalRegisteredCount) modalRegisteredCount.innerText = registrados;
+
   if (modalDetallesSala) modalDetallesSala.classList.remove("hidden");
 }
 
@@ -731,19 +740,27 @@ if (btnLaunchChat) {
 }
 
 // ==================================================
-// SALA DE CHAT EN VIVO
+// SALA DE CHAT EN VIVO Y MENSAJES CON FOTOS
 // ==================================================
-function unirseASala(idSala) {
+async function unirseASala(idSala) {
   const sala = listaSalas.find(s => s.id === idSala);
   if (!sala) return;
 
   if (sala.esPrivada && usuarioActualAuth && Array.isArray(sala.bloqueados) && sala.bloqueados.includes(usuarioActualAuth.uid)) {
-    alert("Acceso denegado: Fuiste bloqueado de esta sala privada.");
-    return;
+    return alert("Acceso denegado: Fuiste bloqueado de esta sala privada.");
   }
 
   idSalaActual = idSala;
   salaActualData = sala;
+
+  // Registrar usuario en la lista de miembros de la sala
+  if (usuarioActualAuth) {
+    try {
+      await updateDoc(doc(baseDatos, "salas", idSala), {
+        usuariosRegistrados: arrayUnion(usuarioActualAuth.uid)
+      });
+    } catch (e) {}
+  }
 
   if (vistaCatalogo) vistaCatalogo.classList.add("hidden");
   if (vistaChat) vistaChat.classList.remove("hidden");
@@ -787,7 +804,6 @@ function unirseASala(idSala) {
 
       const tienePoderSancion = (esOwnerSupremo || esModGlobal) && !esMio && datos.idUsuario;
 
-      // EXCLUSIVO PARA EL OWNER: Ver ID y botones para copiar o ascender a Mod
       let infoOwnerHTML = "";
       if (esOwnerSupremo && !esMio && datos.idUsuario) {
         infoOwnerHTML = `
@@ -801,6 +817,12 @@ function unirseASala(idSala) {
             </button>
           </span>
         `;
+      }
+
+      // Renderizar imagen adjunta si existe
+      let imgHTML = "";
+      if (datos.imagenURL) {
+        imgHTML = `<img src="${datos.imagenURL}" class="chat-msg-img" alt="Foto adjunta" onclick="window.abrirVisorImagen('${datos.imagenURL}')" />`;
       }
 
       burbuja.innerHTML = `
@@ -817,7 +839,8 @@ function unirseASala(idSala) {
             ` : ""}
           </div>
         ` : ""}
-        <div>${escaparTextoHTML(datos.texto || "")}</div>
+        ${datos.texto ? `<div>${escaparTextoHTML(datos.texto)}</div>` : ""}
+        ${imgHTML}
         <div class="bubble-time">${datos.hora || ""}</div>
       `;
       areaMensajes.appendChild(burbuja);
@@ -826,123 +849,47 @@ function unirseASala(idSala) {
   });
 }
 
-function actualizarPermisosInterfazSala() {
-  if (!salaActualData || !usuarioActualAuth) {
-    if (btnOpenRoomSettings) btnOpenRoomSettings.classList.add("hidden");
-    return;
+// Abrir imagen en pantalla completa
+window.abrirVisorImagen = function(url) {
+  if (fullViewImage && modalImageViewer) {
+    fullViewImage.src = url;
+    modalImageViewer.classList.remove("hidden");
   }
+};
 
-  const soyHost = (salaActualData.idCreador === usuarioActualAuth.uid);
-  const soyAdminSala = Array.isArray(salaActualData.admins) && salaActualData.admins.includes(usuarioActualAuth.uid);
-
-  if (btnOpenRoomSettings) {
-    if (soyHost || soyAdminSala || esOwnerSupremo) {
-      btnOpenRoomSettings.classList.remove("hidden");
-    } else {
-      btnOpenRoomSettings.classList.add("hidden");
-    }
-  }
-
-  dibujarListaParticipantes();
-}
-
-function dibujarListaParticipantes() {
-  if (!listaParticipantes || !salaActualData) return;
-  listaParticipantes.innerHTML = "";
-
-  const miUid = usuarioActualAuth ? usuarioActualAuth.uid : null;
-
-  // Creador original de la sala
-  const itemHost = document.createElement("div");
-  itemHost.className = "participant-item";
-
-  let infoHostOwnerHTML = "";
-  if (esOwnerSupremo && salaActualData.idCreador !== miUid) {
-    infoHostOwnerHTML = `
-      <span class="owner-user-tag">
-        ${salaActualData.idCreador.slice(0, 6)}...
-        <button class="btn-owner-action-id" title="Copiar ID" onclick="window.copiarUID('${salaActualData.idCreador}')">
-          <i class="fa-solid fa-copy"></i>
-        </button>
-        <button class="btn-owner-action-id" title="Hacer Moderador Global" onclick="window.promoverAModDirecto('${salaActualData.idCreador}', '${escaparTextoHTML(salaActualData.nombreCreador)}')">
-          <i class="fa-solid fa-shield"></i> +Mod
-        </button>
-      </span>
-    `;
-  }
-
-  itemHost.innerHTML = `
-    <div style="display:flex; align-items:center; gap:8px;">
-      <div class="avatar" style="background:#ffb703; color:#000;">${salaActualData.nombreCreador ? salaActualData.nombreCreador.charAt(0).toUpperCase() : "H"}</div>
-      <span>${escaparTextoHTML(salaActualData.nombreCreador || "Creador")} <span class="badge-host"><i class="fa-solid fa-crown"></i> HOST</span></span>
-    </div>
-    ${infoHostOwnerHTML}
-  `;
-  listaParticipantes.appendChild(itemHost);
-
-  // Mi usuario
-  if (miUid && miUid !== salaActualData.idCreador && perfilActual) {
-    const itemYo = document.createElement("div");
-    itemYo.className = "participant-item";
-    const esAdminYo = Array.isArray(salaActualData.admins) && salaActualData.admins.includes(miUid);
-    itemYo.innerHTML = `
-      <div style="display:flex; align-items:center; gap:8px;">
-        <div class="avatar" style="background:#00b06f;">${perfilActual.nombreUsuario.charAt(0).toUpperCase()}</div>
-        <span>${escaparTextoHTML(perfilActual.nombreUsuario)} (Tú) ${esAdminYo ? `<span class="badge-room-admin">ADMIN SALA</span>` : ""}</span>
-      </div>
-    `;
-    listaParticipantes.appendChild(itemYo);
+// Adjuntar fotos en el chat
+function prepararImagenChat(base64) {
+  imagenAdjuntaChatBase64 = base64;
+  if (previewChatImg && chatImagePreviewBar) {
+    previewChatImg.src = base64;
+    chatImagePreviewBar.classList.remove("hidden");
   }
 }
 
-// Edición de Sala
-if (btnOpenRoomSettings) {
-  btnOpenRoomSettings.addEventListener("click", () => {
-    if (!salaActualData) return;
-    if (editRoomTitle) editRoomTitle.value = salaActualData.titulo || "";
-    if (editRoomDesc) editRoomDesc.value = salaActualData.descripcion || "";
-    if (editRoomImg) editRoomImg.value = salaActualData.imagen || "";
-
-    if (editPasswordContainer && editRoomPass) {
-      if (salaActualData.esPrivada) {
-        editPasswordContainer.classList.remove("hidden");
-        editRoomPass.value = salaActualData.clave || "";
-      } else {
-        editPasswordContainer.classList.add("hidden");
-      }
-    }
-
-    if (modalEditRoom) modalEditRoom.classList.remove("hidden");
-  });
-}
-
-if (formEditRoom) {
-  formEditRoom.addEventListener("submit", async (evento) => {
-    evento.preventDefault();
-    if (!salaActualData || !idSalaActual) return;
-
-    const datosActualizados = {
-      titulo: editRoomTitle ? editRoomTitle.value.trim() : salaActualData.titulo,
-      descripcion: editRoomDesc ? editRoomDesc.value.trim() : salaActualData.descripcion,
-      imagen: (editRoomImg && editRoomImg.value.trim()) ? editRoomImg.value.trim() : salaActualData.imagen
-    };
-
-    if (salaActualData.esPrivada && editRoomPass && editRoomPass.value.trim()) {
-      datosActualizados.clave = editRoomPass.value.trim();
-    }
-
-    try {
-      await updateDoc(doc(baseDatos, "salas", idSalaActual), datosActualizados);
-      if (modalEditRoom) modalEditRoom.classList.add("hidden");
-      alert("Ajustes de sala guardados.");
-    } catch (error) {
-      console.error("Error al editar sala:", error);
-      alert("No se pudieron guardar los cambios.");
+if (inputChatGallery) {
+  inputChatGallery.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+      procesarImagenCanvas(e.target.files[0], 800, 800, 0.8, prepararImagenChat);
     }
   });
 }
 
-// Envío de mensajes
+if (inputChatCamera) {
+  inputChatCamera.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+      procesarImagenCanvas(e.target.files[0], 800, 800, 0.8, prepararImagenChat);
+    }
+  });
+}
+
+if (btnCancelChatImg) {
+  btnCancelChatImg.addEventListener("click", () => {
+    imagenAdjuntaChatBase64 = null;
+    if (chatImagePreviewBar) chatImagePreviewBar.classList.add("hidden");
+  });
+}
+
+// Enviar Mensaje (Texto + Imagen)
 async function enviarMensaje() {
   if (!perfilActual) {
     if (modalAutenticacion) modalAutenticacion.classList.remove("hidden");
@@ -954,19 +901,25 @@ async function enviarMensaje() {
     return;
   }
 
-  if (!campoTextoMensaje) return;
-  const texto = campoTextoMensaje.value.trim();
-  if (!texto || !idSalaActual) return;
+  const texto = campoTextoMensaje ? campoTextoMensaje.value.trim() : "";
+  const imagenAEnviar = imagenAdjuntaChatBase64;
+
+  if (!texto && !imagenAEnviar) return;
+  if (!idSalaActual) return;
 
   const ahora = new Date();
   const formatoHora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
-  campoTextoMensaje.value = "";
+
+  if (campoTextoMensaje) campoTextoMensaje.value = "";
+  imagenAdjuntaChatBase64 = null;
+  if (chatImagePreviewBar) chatImagePreviewBar.classList.add("hidden");
 
   try {
     await addDoc(collection(baseDatos, "salas", idSalaActual, "mensajes"), {
       idUsuario: perfilActual.idUsuario,
       nombreUsuario: perfilActual.nombreUsuario,
       texto: texto,
+      imagenURL: imagenAEnviar || null,
       hora: formatoHora,
       fechaCreacion: serverTimestamp()
     });
@@ -996,7 +949,255 @@ if (campoTextoMensaje) {
   });
 }
 
-// Salas privadas
+function actualizarPermisosInterfazSala() {
+  if (!salaActualData || !usuarioActualAuth) {
+    if (btnOpenRoomSettings) btnOpenRoomSettings.classList.add("hidden");
+    return;
+  }
+
+  const soyHost = (salaActualData.idCreador === usuarioActualAuth.uid);
+  const soyAdminSala = Array.isArray(salaActualData.admins) && salaActualData.admins.includes(usuarioActualAuth.uid);
+
+  if (btnOpenRoomSettings) {
+    if (soyHost || soyAdminSala || esOwnerSupremo) {
+      btnOpenRoomSettings.classList.remove("hidden");
+    } else {
+      btnOpenRoomSettings.classList.add("hidden");
+    }
+  }
+
+  dibujarListaParticipantes();
+}
+
+function dibujarListaParticipantes() {
+  if (!listaParticipantes || !salaActualData) return;
+  listaParticipantes.innerHTML = "";
+
+  const miUid = usuarioActualAuth ? usuarioActualAuth.uid : null;
+
+  const itemHost = document.createElement("div");
+  itemHost.className = "participant-item";
+
+  let infoHostOwnerHTML = "";
+  if (esOwnerSupremo && salaActualData.idCreador !== miUid) {
+    infoHostOwnerHTML = `
+      <span class="owner-user-tag">
+        ${salaActualData.idCreador.slice(0, 6)}...
+        <button class="btn-owner-action-id" title="Copiar ID" onclick="window.copiarUID('${salaActualData.idCreador}')">
+          <i class="fa-solid fa-copy"></i>
+        </button>
+        <button class="btn-owner-action-id" title="Hacer Moderador Global" onclick="window.promoverAModDirecto('${salaActualData.idCreador}', '${escaparTextoHTML(salaActualData.nombreCreador)}')">
+          <i class="fa-solid fa-shield"></i> +Mod
+        </button>
+      </span>
+    `;
+  }
+
+  itemHost.innerHTML = `
+    <div style="display:flex; align-items:center; gap:8px;">
+      <div class="avatar" style="background:#ffb703; color:#000;">${salaActualData.nombreCreador ? salaActualData.nombreCreador.charAt(0).toUpperCase() : "H"}</div>
+      <span>${escaparTextoHTML(salaActualData.nombreCreador || "Creador")} <span class="badge-host"><i class="fa-solid fa-crown"></i> HOST</span></span>
+    </div>
+    ${infoHostOwnerHTML}
+  `;
+  listaParticipantes.appendChild(itemHost);
+
+  if (miUid && miUid !== salaActualData.idCreador && perfilActual) {
+    const itemYo = document.createElement("div");
+    itemYo.className = "participant-item";
+    const esAdminYo = Array.isArray(salaActualData.admins) && salaActualData.admins.includes(miUid);
+    itemYo.innerHTML = `
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div class="avatar" style="background:#00b06f;">${perfilActual.nombreUsuario.charAt(0).toUpperCase()}</div>
+        <span>${escaparTextoHTML(perfilActual.nombreUsuario)} (Tú) ${esAdminYo ? `<span class="badge-room-admin">ADMIN SALA</span>` : ""}</span>
+      </div>
+    `;
+    listaParticipantes.appendChild(itemYo);
+  }
+}
+
+// ==================================================
+// EDICIÓN DE SALA (PORTADA POR CÁMARA O GALERÍA)
+// ==================================================
+if (inputEditRoomGallery) {
+  inputEditRoomGallery.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+      procesarImagenCanvas(e.target.files[0], 700, 400, 0.8, (base64) => {
+        nuevaFotoPortadaEditBase64 = base64;
+        if (editRoomPreviewImg) editRoomPreviewImg.src = base64;
+      });
+    }
+  });
+}
+
+if (inputEditRoomCamera) {
+  inputEditRoomCamera.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+      procesarImagenCanvas(e.target.files[0], 700, 400, 0.8, (base64) => {
+        nuevaFotoPortadaEditBase64 = base64;
+        if (editRoomPreviewImg) editRoomPreviewImg.src = base64;
+      });
+    }
+  });
+}
+
+if (btnOpenRoomSettings) {
+  btnOpenRoomSettings.addEventListener("click", () => {
+    if (!salaActualData) return;
+    nuevaFotoPortadaEditBase64 = null;
+    if (editRoomTitle) editRoomTitle.value = salaActualData.titulo || "";
+    if (editRoomDesc) editRoomDesc.value = salaActualData.descripcion || "";
+    if (editRoomPreviewImg) editRoomPreviewImg.src = salaActualData.imagen || "";
+
+    if (editPasswordContainer && editRoomPass) {
+      if (salaActualData.esPrivada) {
+        editPasswordContainer.classList.remove("hidden");
+        editRoomPass.value = salaActualData.clave || "";
+      } else {
+        editPasswordContainer.classList.add("hidden");
+      }
+    }
+
+    if (modalEditRoom) modalEditRoom.classList.remove("hidden");
+  });
+}
+
+if (formEditRoom) {
+  formEditRoom.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    if (!salaActualData || !idSalaActual) return;
+
+    const datosActualizados = {
+      titulo: editRoomTitle ? editRoomTitle.value.trim() : salaActualData.titulo,
+      descripcion: editRoomDesc ? editRoomDesc.value.trim() : salaActualData.descripcion,
+      imagen: nuevaFotoPortadaEditBase64 || salaActualData.imagen
+    };
+
+    if (salaActualData.esPrivada && editRoomPass && editRoomPass.value.trim()) {
+      datosActualizados.clave = editRoomPass.value.trim();
+    }
+
+    try {
+      await updateDoc(doc(baseDatos, "salas", idSalaActual), datosActualizados);
+      if (modalEditRoom) modalEditRoom.classList.add("hidden");
+      alert("Ajustes de sala guardados.");
+    } catch (error) {
+      console.error("Error al editar sala:", error);
+      alert("No se pudieron guardar los cambios.");
+    }
+  });
+}
+
+// ==================================================
+// CREACIÓN DE SALAS (PORTADA POR CÁMARA O GALERÍA)
+// ==================================================
+if (inputCreateRoomGallery) {
+  inputCreateRoomGallery.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+      procesarImagenCanvas(e.target.files[0], 700, 400, 0.8, (base64) => {
+        nuevaFotoPortadaCreateBase64 = base64;
+        if (createRoomPreviewImg) createRoomPreviewImg.src = base64;
+      });
+    }
+  });
+}
+
+if (inputCreateRoomCamera) {
+  inputCreateRoomCamera.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+      procesarImagenCanvas(e.target.files[0], 700, 400, 0.8, (base64) => {
+        nuevaFotoPortadaCreateBase64 = base64;
+        if (createRoomPreviewImg) createRoomPreviewImg.src = base64;
+      });
+    }
+  });
+}
+
+const btnOpenCreate = document.getElementById("btnOpenCreate");
+const formCreateRoom = document.getElementById("formCreateRoom");
+const createIsPrivate = document.getElementById("createIsPrivate");
+
+if (btnOpenCreate) {
+  btnOpenCreate.addEventListener("click", () => {
+    if (!perfilActual) {
+      if (modalAutenticacion) modalAutenticacion.classList.remove("hidden");
+      return;
+    }
+    nuevaFotoPortadaCreateBase64 = null;
+    if (formCreateRoom) formCreateRoom.reset();
+    if (createRoomPreviewImg) createRoomPreviewImg.src = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600";
+    const passwordGroup = document.getElementById("passwordGroup");
+    if (passwordGroup) passwordGroup.classList.add("hidden");
+    if (modalCrearSala) modalCrearSala.classList.remove("hidden");
+  });
+}
+
+if (createIsPrivate) {
+  createIsPrivate.addEventListener("change", (evento) => {
+    const grupoClave = document.getElementById("passwordGroup");
+    const campoClave = document.getElementById("createPassword");
+    if (evento.target.checked) {
+      if (grupoClave) grupoClave.classList.remove("hidden");
+      if (campoClave) campoClave.setAttribute("required", "true");
+    } else {
+      if (grupoClave) grupoClave.classList.add("hidden");
+      if (campoClave) campoClave.removeAttribute("required");
+    }
+  });
+}
+
+if (formCreateRoom) {
+  formCreateRoom.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    const esPrivada = createIsPrivate ? createIsPrivate.checked : false;
+    const titulo = document.getElementById("createTitle").value.trim();
+    const descripcion = document.getElementById("createDesc").value.trim();
+    const categoria = document.getElementById("createCategory").value;
+    const clave = document.getElementById("createPassword") ? document.getElementById("createPassword").value.trim() : null;
+
+    const idGenerado = (esPrivada ? "VIP-" : "SALA-") + Math.floor(1000 + Math.random() * 9000);
+    const imagenDefecto = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600";
+
+    const datosSala = {
+      titulo: titulo,
+      descripcion: descripcion,
+      categoria: categoria,
+      esPrivada: esPrivada,
+      clave: esPrivada ? clave : null,
+      idCreador: perfilActual.idUsuario,
+      nombreCreador: perfilActual.nombreUsuario,
+      admins: [],
+      bloqueados: [],
+      usuariosRegistrados: [perfilActual.idUsuario],
+      imagen: nuevaFotoPortadaCreateBase64 || imagenDefecto,
+      fechaCreacion: serverTimestamp()
+    };
+
+    try {
+      await setDoc(doc(baseDatos, "salas", idGenerado), datosSala);
+
+      await addDoc(collection(baseDatos, "salas", idGenerado, "mensajes"), {
+        nombreUsuario: "Sistema",
+        texto: `Sala fundada por ${perfilActual.nombreUsuario}. ¡Bienvenidos!`,
+        hora: "Ahora",
+        fechaCreacion: serverTimestamp()
+      });
+
+      if (modalCrearSala) modalCrearSala.classList.add("hidden");
+
+      if (esPrivada) {
+        alert(`¡Sala Privada Creada!\n\nID: ${idGenerado}\nContraseña: ${clave}`);
+      }
+    } catch (error) {
+      console.error("Error al crear sala:", error);
+      alert("Hubo un error al registrar la sala.");
+    }
+  });
+}
+
+// ==================================================
+// EVENTOS MODALES Y FILTROS
+// ==================================================
 const btnOpenPrivateJoin = document.getElementById("btnOpenPrivateJoin");
 const formPrivateJoin = document.getElementById("formPrivateJoin");
 
@@ -1039,88 +1240,6 @@ if (formPrivateJoin) {
   });
 }
 
-// Creación de Salas
-const btnOpenCreate = document.getElementById("btnOpenCreate");
-const formCreateRoom = document.getElementById("formCreateRoom");
-const createIsPrivate = document.getElementById("createIsPrivate");
-
-if (btnOpenCreate) {
-  btnOpenCreate.addEventListener("click", () => {
-    if (!perfilActual) {
-      if (modalAutenticacion) modalAutenticacion.classList.remove("hidden");
-      return;
-    }
-    if (formCreateRoom) formCreateRoom.reset();
-    const passwordGroup = document.getElementById("passwordGroup");
-    if (passwordGroup) passwordGroup.classList.add("hidden");
-    if (modalCrearSala) modalCrearSala.classList.remove("hidden");
-  });
-}
-
-if (createIsPrivate) {
-  createIsPrivate.addEventListener("change", (evento) => {
-    const grupoClave = document.getElementById("passwordGroup");
-    const campoClave = document.getElementById("createPassword");
-    if (evento.target.checked) {
-      if (grupoClave) grupoClave.classList.remove("hidden");
-      if (campoClave) campoClave.setAttribute("required", "true");
-    } else {
-      if (grupoClave) grupoClave.classList.add("hidden");
-      if (campoClave) campoClave.removeAttribute("required");
-    }
-  });
-}
-
-if (formCreateRoom) {
-  formCreateRoom.addEventListener("submit", async (evento) => {
-    evento.preventDefault();
-    const esPrivada = createIsPrivate ? createIsPrivate.checked : false;
-    const titulo = document.getElementById("createTitle").value.trim();
-    const descripcion = document.getElementById("createDesc").value.trim();
-    const categoria = document.getElementById("createCategory").value;
-    const imagenPersonalizada = document.getElementById("createImgUrl").value.trim();
-    const clave = document.getElementById("createPassword") ? document.getElementById("createPassword").value.trim() : null;
-
-    const idGenerado = (esPrivada ? "VIP-" : "SALA-") + Math.floor(1000 + Math.random() * 9000);
-    const imagenDefecto = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80";
-
-    const datosSala = {
-      titulo: titulo,
-      descripcion: descripcion,
-      categoria: categoria,
-      esPrivada: esPrivada,
-      clave: esPrivada ? clave : null,
-      idCreador: perfilActual.idUsuario,
-      nombreCreador: perfilActual.nombreUsuario,
-      admins: [],
-      bloqueados: [],
-      imagen: imagenPersonalizada || imagenDefecto,
-      fechaCreacion: serverTimestamp()
-    };
-
-    try {
-      await setDoc(doc(baseDatos, "salas", idGenerado), datosSala);
-
-      await addDoc(collection(baseDatos, "salas", idGenerado, "mensajes"), {
-        nombreUsuario: "Sistema",
-        texto: `Sala fundada por ${perfilActual.nombreUsuario}. ¡Bienvenidos!`,
-        hora: "Ahora",
-        fechaCreacion: serverTimestamp()
-      });
-
-      if (modalCrearSala) modalCrearSala.classList.add("hidden");
-
-      if (esPrivada) {
-        alert(`¡Sala Privada Creada!\n\nID: ${idGenerado}\nContraseña: ${clave}`);
-      }
-    } catch (error) {
-      console.error("Error al crear sala:", error);
-      alert("Hubo un error al registrar la sala.");
-    }
-  });
-}
-
-// Filtros y modales
 botonesFiltro.forEach(boton => {
   boton.addEventListener("click", () => {
     botonesFiltro.forEach(b => b.classList.remove("active"));
