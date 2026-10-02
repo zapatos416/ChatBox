@@ -35,7 +35,6 @@
     </div>
 
     <div class="nav-right">
-      <!-- Botón exclusivo para ti (Owner Supremo) -->
       <button id="btnOpenOwnerPanel" class="btn-owner-panel hidden">
         <i class="fa-solid fa-crown"></i> <span class="hide-mobile">Gestionar Moderadores</span>
       </button>
@@ -48,12 +47,10 @@
         <i class="fa-solid fa-plus"></i> <span class="hide-mobile">Crear Sala</span>
       </button>
 
-      <!-- Botón de inicio de sesión -->
       <button id="btnOpenAuth" class="btn btn-roblox-login">
         <i class="fa-solid fa-user"></i> <span class="hide-mobile">Iniciar Sesión</span>
       </button>
 
-      <!-- Chip de perfil interactivo -->
       <div class="user-chip hidden" id="userProfileChip" title="Personalizar perfil, foto o apodo">
         <div class="avatar" id="navAvatar">U</div>
         <span id="navUsername">Cargando...</span>
@@ -79,7 +76,6 @@
       </div>
     </div>
 
-    <!-- Grid de tarjetas de chats -->
     <div id="roomsGrid" class="rooms-grid"></div>
   </main>
 
@@ -97,7 +93,6 @@
         </div>
       </div>
 
-      <!-- Ajustes de sala -->
       <button id="btnOpenRoomSettings" class="btn-room-settings hidden">
         <i class="fa-solid fa-gear"></i> <span class="hide-mobile">Ajustes</span>
       </button>
@@ -107,7 +102,25 @@
       <div class="chat-main">
         <div class="messages-area" id="messagesArea"></div>
         
+        <!-- Previsualización de imagen antes de mandar -->
+        <div id="chatImagePreviewBar" class="chat-img-preview-bar hidden">
+          <img id="previewChatImg" src="" alt="Adjunto" />
+          <button id="btnCancelChatImg" class="btn-cancel-preview"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
         <div class="chat-input-bar">
+          <!-- Botones de cámara y galería para el chat -->
+          <div class="chat-attach-buttons">
+            <label class="btn-icon-attach" title="Tomar foto con la cámara">
+              <i class="fa-solid fa-camera"></i>
+              <input type="file" id="inputChatCamera" accept="image/*" capture="environment" class="hidden" />
+            </label>
+            <label class="btn-icon-attach" title="Subir imagen de la galería">
+              <i class="fa-solid fa-image"></i>
+              <input type="file" id="inputChatGallery" accept="image/*" class="hidden" />
+            </label>
+          </div>
+
           <input type="text" id="chatInput" placeholder="Escribe un mensaje aquí..." maxlength="400" autocomplete="off" />
           <button id="btnSendMessage" class="btn-send">
             <i class="fa-solid fa-paper-plane"></i>
@@ -121,6 +134,14 @@
       </aside>
     </div>
   </section>
+
+  <!-- MODAL: VISOR DE IMAGEN A PANTALLA COMPLETA -->
+  <div id="modalImageViewer" class="modal-overlay hidden" style="z-index: 2000;">
+    <div class="image-viewer-container">
+      <button class="modal-close" data-close="modalImageViewer"><i class="fa-solid fa-xmark"></i></button>
+      <img id="fullViewImage" src="" alt="Vista completa" />
+    </div>
+  </div>
 
   <!-- MODAL: INICIO DE SESIÓN -->
   <div id="modalAuth" class="modal-overlay hidden">
@@ -156,13 +177,10 @@
           </div>
 
           <div class="avatar-actions">
-            <!-- Galería de fotos -->
             <label class="btn-avatar-action" title="Elegir de galería">
               <i class="fa-solid fa-image"></i> Galería
               <input type="file" id="inputAvatarGallery" accept="image/*" class="hidden" />
             </label>
-
-            <!-- Cámara del celular -->
             <label class="btn-avatar-action" title="Tomar foto con la cámara">
               <i class="fa-solid fa-camera"></i> Cámara
               <input type="file" id="inputAvatarCamera" accept="image/*" capture="user" class="hidden" />
@@ -209,12 +227,12 @@
     </div>
   </div>
 
-  <!-- MODAL: AJUSTES / EDITAR SALA -->
+  <!-- MODAL: AJUSTES / EDITAR SALA (CON FOTO POR CÁMARA O GALERÍA) -->
   <div id="modalEditRoom" class="modal-overlay hidden">
     <div class="modal-card">
       <button class="modal-close" data-close="modalEditRoom"><i class="fa-solid fa-xmark"></i></button>
       <h2><i class="fa-solid fa-sliders"></i> Ajustes de la Sala</h2>
-      <p class="modal-subtitle">Modifica la información visible de este chat.</p>
+      <p class="modal-subtitle">Modifica la información y portada de este chat.</p>
 
       <form id="formEditRoom">
         <div class="form-group">
@@ -225,9 +243,23 @@
           <label>Descripción</label>
           <input type="text" id="editRoomDesc" required maxlength="120" />
         </div>
+
+        <!-- Portada por Cámara o Galería -->
         <div class="form-group">
-          <label>URL de Imagen de Portada</label>
-          <input type="url" id="editRoomImg" />
+          <label>Foto de Portada del Grupo</label>
+          <div class="room-img-preview-box">
+            <img id="editRoomPreviewImg" src="" alt="Portada" />
+            <div class="room-img-buttons">
+              <label class="btn-avatar-action">
+                <i class="fa-solid fa-image"></i> Galería
+                <input type="file" id="inputEditRoomGallery" accept="image/*" class="hidden" />
+              </label>
+              <label class="btn-avatar-action">
+                <i class="fa-solid fa-camera"></i> Cámara
+                <input type="file" id="inputEditRoomCamera" accept="image/*" capture="environment" class="hidden" />
+              </label>
+            </div>
+          </div>
         </div>
         
         <div class="form-group hidden" id="editPasswordContainer">
@@ -240,12 +272,15 @@
     </div>
   </div>
 
-  <!-- MODAL: DETALLES DE SALA -->
+  <!-- MODAL: DETALLES DE SALA (MUESTRA TOTAL DE USUARIOS REGISTRADOS) -->
   <div id="modalDetails" class="modal-overlay hidden">
     <div class="modal-card">
       <button class="modal-close" data-close="modalDetails"><i class="fa-solid fa-xmark"></i></button>
       <div class="modal-banner">
         <img id="modalImg" src="" alt="Vista previa" />
+        <span class="room-registered-badge">
+          <i class="fa-solid fa-users"></i> <span id="modalRegisteredCount">0</span> registrados
+        </span>
       </div>
       <div class="modal-content">
         <h2 id="modalTitle">Nombre de la Sala</h2>
@@ -285,12 +320,12 @@
     </div>
   </div>
 
-  <!-- MODAL: CREAR SALA -->
+  <!-- MODAL: CREAR SALA (CON FOTO POR CÁMARA O GALERÍA) -->
   <div id="modalCreateRoom" class="modal-overlay hidden">
     <div class="modal-card">
       <button class="modal-close" data-close="modalCreateRoom"><i class="fa-solid fa-xmark"></i></button>
       <h2>Crear Nueva Sala de Chat</h2>
-      <p class="modal-subtitle">Publica un espacio o crea un salón privado con clave.</p>
+      <p class="modal-subtitle">Publica un espacio con foto personalizada de tu galería o cámara.</p>
 
       <form id="formCreateRoom">
         <div class="form-group">
@@ -309,9 +344,23 @@
             <option value="chill">Chill</option>
           </select>
         </div>
+
+        <!-- Portada por Cámara o Galería -->
         <div class="form-group">
-          <label>URL de Imagen de Portada (Opcional)</label>
-          <input type="url" id="createImgUrl" placeholder="https://..." />
+          <label>Foto de Portada del Grupo</label>
+          <div class="room-img-preview-box">
+            <img id="createRoomPreviewImg" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600" alt="Portada por defecto" />
+            <div class="room-img-buttons">
+              <label class="btn-avatar-action">
+                <i class="fa-solid fa-image"></i> Galería
+                <input type="file" id="inputCreateRoomGallery" accept="image/*" class="hidden" />
+              </label>
+              <label class="btn-avatar-action">
+                <i class="fa-solid fa-camera"></i> Cámara
+                <input type="file" id="inputCreateRoomCamera" accept="image/*" capture="environment" class="hidden" />
+              </label>
+            </div>
+          </div>
         </div>
         
         <div class="form-group checkbox-group">
