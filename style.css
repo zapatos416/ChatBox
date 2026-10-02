@@ -360,7 +360,7 @@ body {
 
 .rooms-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 20px;
 }
 
@@ -372,6 +372,8 @@ body {
   cursor: pointer;
   transition: 0.2s transform, 0.2s border-color;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .room-card:hover {
@@ -379,13 +381,21 @@ body {
   border-color: var(--roblox-green);
 }
 
+/* Contenedor de portada protegido contra imágenes rotas */
 .card-thumb {
   position: relative;
+  width: 100%;
+  height: 150px;
+  background: linear-gradient(135deg, #1f232d 0%, #111317 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 }
 
 .card-thumb img {
   width: 100%;
-  height: 150px;
+  height: 100%;
   object-fit: cover;
   display: block;
 }
@@ -394,7 +404,7 @@ body {
   position: absolute;
   bottom: 8px;
   right: 8px;
-  background: rgba(14, 16, 21, 0.85);
+  background: rgba(14, 16, 21, 0.88);
   backdrop-filter: blur(4px);
   color: #fff;
   font-size: 0.72rem;
@@ -405,10 +415,14 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  z-index: 2;
 }
 
 .card-content {
   padding: 14px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .card-title {
@@ -420,7 +434,7 @@ body {
 .card-desc {
   color: var(--text-muted);
   font-size: 0.85rem;
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 /* ==================================================
@@ -469,6 +483,7 @@ body {
   height: 42px;
   border-radius: 8px;
   object-fit: cover;
+  background: var(--bg-card);
 }
 
 .status-badge {
@@ -559,7 +574,6 @@ body {
   margin-top: 6px;
 }
 
-/* Imagen en el mensaje (arriba) */
 .chat-msg-img {
   max-width: 100%;
   max-height: 280px;
@@ -574,7 +588,6 @@ body {
   opacity: 0.92;
 }
 
-/* Pie de foto debajo de la imagen */
 .chat-caption-text {
   margin-top: 6px;
   font-size: 0.92rem;
@@ -594,7 +607,6 @@ body {
   gap: 8px;
 }
 
-/* Miniatura flotante previa al envío */
 .chat-attachment-preview-box {
   display: inline-flex;
   align-items: center;
@@ -659,7 +671,6 @@ body {
   color: #fff;
 }
 
-/* Fila de controles y campo */
 .chat-composer-controls {
   display: flex;
   align-items: center;
@@ -747,7 +758,7 @@ body {
 }
 
 /* ==================================================
-   EXCLUSIVO OWNER: ETIQUETAS DE ID Y ACCIONES
+   EXCLUSIVO OWNER
    ================================================== */
 .owner-user-tag {
   display: inline-flex;
@@ -809,6 +820,7 @@ body {
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid var(--border-color);
+  background: #1f232d;
 }
 
 .room-img-buttons {
@@ -990,14 +1002,19 @@ body {
 
 .modal-banner {
   position: relative;
+  width: 100%;
+  height: 180px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 14px;
+  background: #1f232d;
 }
 
 .modal-banner img {
   width: 100%;
-  height: 180px;
+  height: 100%;
   object-fit: cover;
-  border-radius: 10px;
-  margin-bottom: 14px;
+  display: block;
 }
 
 .modal-meta {
