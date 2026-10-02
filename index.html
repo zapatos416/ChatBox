@@ -48,12 +48,12 @@
         <i class="fa-solid fa-plus"></i> <span class="hide-mobile">Crear Sala</span>
       </button>
 
-      <!-- Botón visible si NO ha iniciado sesión -->
+      <!-- Botón de inicio de sesión -->
       <button id="btnOpenAuth" class="btn btn-roblox-login">
         <i class="fa-solid fa-user"></i> <span class="hide-mobile">Iniciar Sesión</span>
       </button>
 
-      <!-- Chip de perfil interactivo (haz clic para editar perfil y foto) -->
+      <!-- Chip de perfil interactivo -->
       <div class="user-chip hidden" id="userProfileChip" title="Personalizar perfil, foto o apodo">
         <div class="avatar" id="navAvatar">U</div>
         <span id="navUsername">Cargando...</span>
@@ -97,7 +97,7 @@
         </div>
       </div>
 
-      <!-- Botón visible solo si eres Host, Admin de la sala o el Owner Supremo -->
+      <!-- Ajustes de sala -->
       <button id="btnOpenRoomSettings" class="btn-room-settings hidden">
         <i class="fa-solid fa-gear"></i> <span class="hide-mobile">Ajustes</span>
       </button>
@@ -141,7 +141,7 @@
     </div>
   </div>
 
-  <!-- MODAL: PERFIL DE USUARIO AVANZADO (FOTO, CÁMARA, GALERÍA Y APODO CADA 60 DÍAS) -->
+  <!-- MODAL: PERFIL DE USUARIO AVANZADO -->
   <div id="modalUserProfile" class="modal-overlay hidden">
     <div class="modal-card modal-sm">
       <button class="modal-close" data-close="modalUserProfile"><i class="fa-solid fa-xmark"></i></button>
@@ -162,7 +162,7 @@
               <input type="file" id="inputAvatarGallery" accept="image/*" class="hidden" />
             </label>
 
-            <!-- Tomar foto con la cámara del celular -->
+            <!-- Cámara del celular -->
             <label class="btn-avatar-action" title="Tomar foto con la cámara">
               <i class="fa-solid fa-camera"></i> Cámara
               <input type="file" id="inputAvatarCamera" accept="image/*" capture="user" class="hidden" />
@@ -193,7 +193,7 @@
       <p class="modal-subtitle">Asigna o revoca el rango de Moderador Global a otros usuarios.</p>
 
       <div class="form-group">
-        <label>Asignar nuevo Moderador (Correo o UID de usuario)</label>
+        <label>Asignar nuevo Moderador (Correo o UID)</label>
         <div style="display: flex; gap: 8px;">
           <input type="text" id="newModInput" placeholder="Introduce el correo o UID exacto" style="flex: 1;" />
           <button id="btnAddModGlobal" class="btn btn-primary">Asignar Rango</button>
@@ -240,7 +240,7 @@
     </div>
   </div>
 
-  <!-- MODAL: DETALLES DE SALA / BOTÓN ENTRAR -->
+  <!-- MODAL: DETALLES DE SALA -->
   <div id="modalDetails" class="modal-overlay hidden">
     <div class="modal-card">
       <button class="modal-close" data-close="modalDetails"><i class="fa-solid fa-xmark"></i></button>
@@ -332,7 +332,6 @@
     </div>
   </div>
 
-  <!-- ARCHIVO JAVASCRIPT MODULAR -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
