@@ -193,6 +193,23 @@ body {
   background: var(--roblox-green-hover);
 }
 
+.btn-switch-account {
+  background: var(--bg-input);
+  color: #3a86ff;
+  border: 1px solid #3a86ff;
+  padding: 10px;
+  font-size: 0.9rem;
+  font-weight: 800;
+  border-radius: 8px;
+  justify-content: center;
+  transition: 0.2s all;
+}
+
+.btn-switch-account:hover {
+  background: #3a86ff;
+  color: #fff;
+}
+
 .btn-block {
   width: 100%;
 }
@@ -381,7 +398,6 @@ body {
   border-color: var(--roblox-green);
 }
 
-/* Contenedor de portada protegido contra imágenes rotas */
 .card-thumb {
   position: relative;
   width: 100%;
