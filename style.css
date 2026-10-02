@@ -374,6 +374,7 @@ body {
   overflow: hidden;
   cursor: pointer;
   transition: 0.2s transform, 0.2s border-color;
+  position: relative;
 }
 
 .room-card:hover {
@@ -381,11 +382,33 @@ body {
   border-color: var(--roblox-green);
 }
 
+.card-thumb {
+  position: relative;
+}
+
 .card-thumb img {
   width: 100%;
   height: 150px;
   object-fit: cover;
   display: block;
+}
+
+/* Pastilla de usuarios registrados en la tarjeta */
+.room-registered-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(14, 16, 21, 0.85);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .card-content {
@@ -490,6 +513,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;
 }
 
 .messages-area {
@@ -539,24 +563,79 @@ body {
   margin-top: 4px;
 }
 
-.btn-ban {
-  background: var(--danger-color);
-  color: #fff;
-  border: none;
-  font-size: 0.68rem;
-  font-weight: 800;
-  padding: 2px 7px;
-  border-radius: 4px;
+/* Imágenes dentro de los mensajes */
+.chat-msg-img {
+  max-width: 100%;
+  max-height: 220px;
+  border-radius: 8px;
+  margin-top: 6px;
   cursor: pointer;
-  margin-left: 8px;
+  display: block;
+  object-fit: cover;
+  transition: opacity 0.2s;
 }
 
+.chat-msg-img:hover {
+  opacity: 0.9;
+}
+
+/* Barra de vista previa antes de mandar foto */
+.chat-img-preview-bar {
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid var(--border-color);
+}
+
+.chat-img-preview-bar img {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.btn-cancel-preview {
+  background: transparent;
+  border: none;
+  color: var(--danger-color);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* Barra de entrada de chat */
 .chat-input-bar {
   padding: 12px 18px;
   background: var(--bg-input);
   border-top: 1px solid var(--border-color);
   display: flex;
+  align-items: center;
   gap: 10px;
+}
+
+.chat-attach-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-icon-attach {
+  background: var(--bg-card);
+  color: var(--text-muted);
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  transition: 0.2s all;
+}
+
+.btn-icon-attach:hover {
+  color: var(--text-main);
+  border-color: var(--roblox-green);
 }
 
 .chat-input-bar input {
@@ -575,6 +654,7 @@ body {
   border: none;
   color: #fff;
   width: 44px;
+  height: 40px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 1rem;
@@ -645,6 +725,57 @@ body {
   color: #000;
 }
 
+.btn-ban {
+  background: var(--danger-color);
+  color: #fff;
+  border: none;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+/* ==================================================
+   PORTADAS DE SALAS (CÁMARA / GALERÍA)
+   ================================================== */
+.room-img-preview-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.room-img-preview-box img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.room-img-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* Visor a pantalla completa */
+.image-viewer-container {
+  max-width: 90vw;
+  max-height: 90vh;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-viewer-container img {
+  max-width: 100%;
+  max-height: 85vh;
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
+}
+
 /* ==================================================
    VENTANAS MODALES
    ================================================== */
@@ -683,6 +814,7 @@ body {
   color: var(--text-muted);
   font-size: 1.1rem;
   cursor: pointer;
+  z-index: 10;
 }
 
 .modal-subtitle {
@@ -799,6 +931,10 @@ body {
   font-weight: 700;
 }
 
+.modal-banner {
+  position: relative;
+}
+
 .modal-banner img {
   width: 100%;
   height: 180px;
@@ -815,9 +951,7 @@ body {
   margin: 12px 0 18px 0;
 }
 
-/* ==================================================
-   PERFIL Y AVATAR PERSONALIZADO
-   ================================================== */
+/* Perfil */
 .avatar-edit-container {
   display: flex;
   flex-direction: column;
@@ -926,7 +1060,7 @@ body {
 }
 
 /* ==================================================
-   RESPONSIVIDAD AVANZADA PARA CELULARES (< 768px)
+   RESPONSIVIDAD CELULARES (< 768px)
    ================================================== */
 @media (max-width: 768px) {
   .hide-mobile {
@@ -1033,7 +1167,7 @@ body {
   .chat-input-bar input {
     font-size: 15px;
     border-radius: 20px;
-    padding: 8px 14px;
+    padding: 8px 12px;
   }
 
   .btn-send {
