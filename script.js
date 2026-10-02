@@ -65,7 +65,7 @@ let miIPActual = null;
 let ipsBaneadas = new Set();
 let uidsBaneados = new Set();
 
-// Detección de IP pública
+// Detección automática de la IP del dispositivo
 async function capturarIPVisitante() {
   try {
     const respuesta = await fetch("https://api.ipify.org?format=json");
@@ -457,6 +457,43 @@ if (botonAbrirAuth) {
 }
 
 // ==================================================
+// FUNCIONES EXCLUSIVAS DEL OWNER: COPIAR ID Y ASCENDER
+// ==================================================
+window.copiarUID = function(uid) {
+  navigator.clipboard.writeText(uid);
+  alert(`ID copiado al portapapeles:\n${uid}`);
+};
+
+window.promoverAModDirecto = async function(uidObjetivo, nombreObjetivo) {
+  if (!esOwnerSupremo) return;
+
+  if (uidObjetivo === usuarioActualAuth.uid) {
+    alert("Tú ya eres el Owner Supremo.");
+    return;
+  }
+
+  if (listaModsGlobales.has(uidObjetivo)) {
+    alert(`@${nombreObjetivo} ya es Moderador Global.`);
+    return;
+  }
+
+  const confirmar = confirm(`¿Deseas ascender a "@${nombreObjetivo}" a Moderador Global de BloxChat?`);
+  if (!confirmar) return;
+
+  try {
+    await setDoc(doc(baseDatos, "moderadores_globales", uidObjetivo), {
+      nombreUsuario: nombreObjetivo,
+      asignadoPor: perfilActual.nombreUsuario,
+      fechaAsignacion: serverTimestamp()
+    });
+    alert(`¡@${nombreObjetivo} ahora es Moderador Global!`);
+  } catch (error) {
+    console.error("Error al ascender:", error);
+    alert("No se pudo otorgar el rango.");
+  }
+};
+
+// ==================================================
 // PANEL DE CONTROL DEL OWNER (GESTIÓN DE MODS)
 // ==================================================
 if (btnOpenOwnerPanel) {
@@ -750,10 +787,29 @@ function unirseASala(idSala) {
 
       const tienePoderSancion = (esOwnerSupremo || esModGlobal) && !esMio && datos.idUsuario;
 
+      // EXCLUSIVO PARA EL OWNER: Ver ID y botones para copiar o ascender a Mod
+      let infoOwnerHTML = "";
+      if (esOwnerSupremo && !esMio && datos.idUsuario) {
+        infoOwnerHTML = `
+          <span class="owner-user-tag" title="UID exclusivo para ti (Owner)">
+            ID: ${datos.idUsuario.slice(0, 6)}...
+            <button class="btn-owner-action-id" title="Copiar ID completo" onclick="window.copiarUID('${datos.idUsuario}')">
+              <i class="fa-solid fa-copy"></i>
+            </button>
+            <button class="btn-owner-action-id" title="Hacer Moderador Global" onclick="window.promoverAModDirecto('${datos.idUsuario}', '${escaparTextoHTML(datos.nombreUsuario)}')">
+              <i class="fa-solid fa-shield"></i> +Mod
+            </button>
+          </span>
+        `;
+      }
+
       burbuja.innerHTML = `
         ${!esMio ? `
-          <div class="bubble-author" style="display:flex; justify-content:space-between; align-items:center;">
-            <span>${escaparTextoHTML(datos.nombreUsuario || "Anónimo")}</span>
+          <div class="bubble-author" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+            <div style="display:flex; align-items:center;">
+              <span>${escaparTextoHTML(datos.nombreUsuario || "Anónimo")}</span>
+              ${infoOwnerHTML}
+            </div>
             ${tienePoderSancion ? `
               <button class="btn-ban" title="Banear IP y purgar mensajes" onclick="window.ejecutarSancion('${datos.idUsuario}', '${escaparTextoHTML(datos.nombreUsuario)}')">
                 <i class="fa-solid fa-gavel"></i> ${esOwnerSupremo ? "BAN IP & PURGA" : "EXPULSAR"}
@@ -796,21 +852,44 @@ function dibujarListaParticipantes() {
 
   const miUid = usuarioActualAuth ? usuarioActualAuth.uid : null;
 
+  // Creador original de la sala
   const itemHost = document.createElement("div");
   itemHost.className = "participant-item";
+
+  let infoHostOwnerHTML = "";
+  if (esOwnerSupremo && salaActualData.idCreador !== miUid) {
+    infoHostOwnerHTML = `
+      <span class="owner-user-tag">
+        ${salaActualData.idCreador.slice(0, 6)}...
+        <button class="btn-owner-action-id" title="Copiar ID" onclick="window.copiarUID('${salaActualData.idCreador}')">
+          <i class="fa-solid fa-copy"></i>
+        </button>
+        <button class="btn-owner-action-id" title="Hacer Moderador Global" onclick="window.promoverAModDirecto('${salaActualData.idCreador}', '${escaparTextoHTML(salaActualData.nombreCreador)}')">
+          <i class="fa-solid fa-shield"></i> +Mod
+        </button>
+      </span>
+    `;
+  }
+
   itemHost.innerHTML = `
-    <div class="avatar" style="background:#ffb703; color:#000;">${salaActualData.nombreCreador ? salaActualData.nombreCreador.charAt(0).toUpperCase() : "H"}</div>
-    <span>${escaparTextoHTML(salaActualData.nombreCreador || "Creador")} <span class="badge-host"><i class="fa-solid fa-crown"></i> HOST</span></span>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <div class="avatar" style="background:#ffb703; color:#000;">${salaActualData.nombreCreador ? salaActualData.nombreCreador.charAt(0).toUpperCase() : "H"}</div>
+      <span>${escaparTextoHTML(salaActualData.nombreCreador || "Creador")} <span class="badge-host"><i class="fa-solid fa-crown"></i> HOST</span></span>
+    </div>
+    ${infoHostOwnerHTML}
   `;
   listaParticipantes.appendChild(itemHost);
 
+  // Mi usuario
   if (miUid && miUid !== salaActualData.idCreador && perfilActual) {
     const itemYo = document.createElement("div");
     itemYo.className = "participant-item";
     const esAdminYo = Array.isArray(salaActualData.admins) && salaActualData.admins.includes(miUid);
     itemYo.innerHTML = `
-      <div class="avatar" style="background:#00b06f;">${perfilActual.nombreUsuario.charAt(0).toUpperCase()}</div>
-      <span>${escaparTextoHTML(perfilActual.nombreUsuario)} (Tú) ${esAdminYo ? `<span class="badge-room-admin">ADMIN SALA</span>` : ""}</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div class="avatar" style="background:#00b06f;">${perfilActual.nombreUsuario.charAt(0).toUpperCase()}</div>
+        <span>${escaparTextoHTML(perfilActual.nombreUsuario)} (Tú) ${esAdminYo ? `<span class="badge-room-admin">ADMIN SALA</span>` : ""}</span>
+      </div>
     `;
     listaParticipantes.appendChild(itemYo);
   }
