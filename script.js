@@ -192,7 +192,7 @@ const inputCreateRoomGallery = document.getElementById("inputCreateRoomGallery")
 const inputCreateRoomCamera = document.getElementById("inputCreateRoomCamera");
 let nuevaFotoPortadaCreateBase64 = null;
 
-// Chat y adjuntos de imagen
+// Chat y bandeja de imagen adjunta
 const areaMensajes = document.getElementById("messagesArea");
 const campoTextoMensaje = document.getElementById("chatInput");
 const botonEnviarMensaje = document.getElementById("btnSendMessage");
@@ -203,10 +203,10 @@ const listaParticipantes = document.getElementById("participantsList");
 
 const inputChatCamera = document.getElementById("inputChatCamera");
 const inputChatGallery = document.getElementById("inputChatGallery");
-const chatImagePreviewBar = document.getElementById("chatImagePreviewBar");
-const previewChatImg = document.getElementById("previewChatImg");
-const btnCancelChatImg = document.getElementById("btnCancelChatImg");
-let imagenAdjuntaChatBase64 = null;
+const chatAttachmentBox = document.getElementById("chatAttachmentBox");
+const chatAttachmentImg = document.getElementById("chatAttachmentImg");
+const btnRemoveChatAttachment = document.getElementById("btnRemoveChatAttachment");
+let fotoPendienteDeEnvioBase64 = null;
 
 // Visor de imagen
 const modalImageViewer = document.getElementById("modalImageViewer");
@@ -433,10 +433,10 @@ if (formPerfil) {
       perfilActual = { ...perfilActual, ...datosActualizados };
       actualizarInterfazUsuario(perfilActual);
       if (modalPerfil) modalPerfil.classList.add("hidden");
-      alert("¡Perfil actualizado!");
+      alert("¡Perfil actualizado con éxito!");
     } catch (error) {
       console.error("Error al actualizar perfil:", error);
-      alert("Hubo un fallo al guardar.");
+      alert("Hubo un fallo al guardar los cambios.");
     }
   });
 }
@@ -489,7 +489,7 @@ if (botonAbrirAuth) {
 }
 
 // ==================================================
-// COPIAR ID Y ASCENDER DIRECTO (OWNER)
+// PANEL DEL OWNER (UID Y ASCENSO DIRECTO)
 // ==================================================
 window.copiarUID = function(uid) {
   navigator.clipboard.writeText(uid);
@@ -819,7 +819,6 @@ async function unirseASala(idSala) {
         `;
       }
 
-      // Renderizar imagen adjunta si existe
       let imgHTML = "";
       if (datos.imagenURL) {
         imgHTML = `<img src="${datos.imagenURL}" class="chat-msg-img" alt="Foto adjunta" onclick="window.abrirVisorImagen('${datos.imagenURL}')" />`;
@@ -857,39 +856,46 @@ window.abrirVisorImagen = function(url) {
   }
 };
 
-// Adjuntar fotos en el chat
-function prepararImagenChat(base64) {
-  imagenAdjuntaChatBase64 = base64;
-  if (previewChatImg && chatImagePreviewBar) {
-    previewChatImg.src = base64;
-    chatImagePreviewBar.classList.remove("hidden");
-  }
-}
-
-if (inputChatGallery) {
-  inputChatGallery.addEventListener("change", (e) => {
-    if (e.target.files && e.target.files[0]) {
-      procesarImagenCanvas(e.target.files[0], 800, 800, 0.8, prepararImagenChat);
-    }
+// ==================================================
+// BANDEJA ADJUNTA ESTILO WHATSAPP/GEMINI
+// ==================================================
+function fijarImagenEnBandeja(archivo) {
+  if (!archivo) return;
+  procesarImagenCanvas(archivo, 800, 800, 0.75, (base64) => {
+    fotoPendienteDeEnvioBase64 = base64;
+    if (chatAttachmentImg) chatAttachmentImg.src = base64;
+    if (chatAttachmentBox) chatAttachmentBox.classList.remove("hidden");
+    if (campoTextoMensaje) campoTextoMensaje.focus();
   });
 }
 
 if (inputChatCamera) {
   inputChatCamera.addEventListener("change", (e) => {
     if (e.target.files && e.target.files[0]) {
-      procesarImagenCanvas(e.target.files[0], 800, 800, 0.8, prepararImagenChat);
+      fijarImagenEnBandeja(e.target.files[0]);
+      e.target.value = "";
     }
   });
 }
 
-if (btnCancelChatImg) {
-  btnCancelChatImg.addEventListener("click", () => {
-    imagenAdjuntaChatBase64 = null;
-    if (chatImagePreviewBar) chatImagePreviewBar.classList.add("hidden");
+if (inputChatGallery) {
+  inputChatGallery.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+      fijarImagenEnBandeja(e.target.files[0]);
+      e.target.value = "";
+    }
   });
 }
 
-// Enviar Mensaje (Texto + Imagen)
+if (btnRemoveChatAttachment) {
+  btnRemoveChatAttachment.addEventListener("click", () => {
+    fotoPendienteDeEnvioBase64 = null;
+    if (chatAttachmentImg) chatAttachmentImg.src = "";
+    if (chatAttachmentBox) chatAttachmentBox.classList.add("hidden");
+  });
+}
+
+// Enviar Mensaje (Texto + Foto)
 async function enviarMensaje() {
   if (!perfilActual) {
     if (modalAutenticacion) modalAutenticacion.classList.remove("hidden");
@@ -902,29 +908,35 @@ async function enviarMensaje() {
   }
 
   const texto = campoTextoMensaje ? campoTextoMensaje.value.trim() : "";
-  const imagenAEnviar = imagenAdjuntaChatBase64;
+  const imagen = fotoPendienteDeEnvioBase64;
 
-  if (!texto && !imagenAEnviar) return;
+  if (!texto && !imagen) return;
   if (!idSalaActual) return;
 
   const ahora = new Date();
   const formatoHora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
 
+  // Limpiar controles de inmediato
   if (campoTextoMensaje) campoTextoMensaje.value = "";
-  imagenAdjuntaChatBase64 = null;
-  if (chatImagePreviewBar) chatImagePreviewBar.classList.add("hidden");
+  fotoPendienteDeEnvioBase64 = null;
+  if (chatAttachmentImg) chatAttachmentImg.src = "";
+  if (chatAttachmentBox) chatAttachmentBox.classList.add("hidden");
 
   try {
-    await addDoc(collection(baseDatos, "salas", idSalaActual, "mensajes"), {
+    const paqueteMensaje = {
       idUsuario: perfilActual.idUsuario,
       nombreUsuario: perfilActual.nombreUsuario,
-      texto: texto,
-      imagenURL: imagenAEnviar || null,
       hora: formatoHora,
       fechaCreacion: serverTimestamp()
-    });
+    };
+
+    if (texto) paqueteMensaje.texto = texto;
+    if (imagen) paqueteMensaje.imagenURL = imagen;
+
+    await addDoc(collection(baseDatos, "salas", idSalaActual, "mensajes"), paqueteMensaje);
   } catch (error) {
     console.error("Error al registrar mensaje:", error);
+    alert("Hubo un fallo al subir el mensaje o la imagen.");
   }
 }
 
