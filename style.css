@@ -393,7 +393,6 @@ body {
   display: block;
 }
 
-/* Pastilla de usuarios registrados en la tarjeta */
 .room-registered-badge {
   position: absolute;
   bottom: 8px;
@@ -563,7 +562,6 @@ body {
   margin-top: 4px;
 }
 
-/* Imágenes dentro de los mensajes */
 .chat-msg-img {
   max-width: 100%;
   max-height: 220px;
@@ -579,39 +577,87 @@ body {
   opacity: 0.9;
 }
 
-/* Barra de vista previa antes de mandar foto */
-.chat-img-preview-bar {
-  padding: 8px 16px;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-top: 1px solid var(--border-color);
-}
-
-.chat-img-preview-bar img {
-  width: 48px;
-  height: 48px;
-  border-radius: 6px;
-  object-fit: cover;
-}
-
-.btn-cancel-preview {
-  background: transparent;
-  border: none;
-  color: var(--danger-color);
-  font-size: 1.1rem;
-  cursor: pointer;
-}
-
-/* Barra de entrada de chat */
-.chat-input-bar {
-  padding: 12px 18px;
+/* ==================================================
+   COMPOSER DE CHAT ESTILO WHATSAPP / GEMINI
+   ================================================== */
+.chat-composer-wrapper {
   background: var(--bg-input);
   border-top: 1px solid var(--border-color);
   display: flex;
+  flex-direction: column;
+  padding: 8px 14px;
+  gap: 8px;
+}
+
+.chat-attachment-preview-box {
+  display: inline-flex;
   align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 6px 10px;
+  border-radius: 12px;
+  width: fit-content;
+  max-width: 100%;
   gap: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  animation: fadeInAttachment 0.2s ease-out;
+}
+
+@keyframes fadeInAttachment {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-attachment-thumb {
+  width: 54px;
+  height: 54px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--border-color);
+}
+
+.chat-attachment-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chat-attachment-info span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.chat-attachment-info small {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.btn-remove-attachment {
+  background: rgba(217, 4, 41, 0.15);
+  border: none;
+  color: var(--danger-color);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  transition: 0.2s background;
+}
+
+.btn-remove-attachment:hover {
+  background: var(--danger-color);
+  color: #fff;
+}
+
+.chat-composer-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
 }
 
 .chat-attach-buttons {
@@ -638,15 +684,19 @@ body {
   border-color: var(--roblox-green);
 }
 
-.chat-input-bar input {
+.chat-composer-controls input {
   flex: 1;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px 14px;
+  border-radius: 20px;
+  padding: 10px 16px;
   color: var(--text-main);
   outline: none;
   font-size: 0.95rem;
+}
+
+.chat-composer-controls input:focus {
+  border-color: var(--roblox-green);
 }
 
 .btn-send {
@@ -759,7 +809,7 @@ body {
   gap: 8px;
 }
 
-/* Visor a pantalla completa */
+/* Visor de imágenes a pantalla completa */
 .image-viewer-container {
   max-width: 90vw;
   max-height: 90vh;
@@ -1159,15 +1209,15 @@ body {
     padding: 9px 12px;
   }
 
-  .chat-input-bar {
+  .chat-composer-wrapper {
     padding: 8px 10px;
     padding-bottom: max(8px, env(safe-area-inset-bottom));
   }
 
-  .chat-input-bar input {
+  .chat-composer-controls input {
     font-size: 15px;
     border-radius: 20px;
-    padding: 8px 12px;
+    padding: 8px 14px;
   }
 
   .btn-send {
