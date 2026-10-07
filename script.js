@@ -52,6 +52,17 @@ const proveedorFacebook = new FacebookAuthProvider();
 // Portada por defecto 100% segura (SVG en Data URI, nunca falla)
 const PORTADA_DEFECTO = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='350' viewBox='0 0 600 350'><rect width='600' height='350' fill='%23181a20'/><circle cx='300' cy='150' r='60' fill='%2300b06f'/><text x='300' y='165' font-family='sans-serif' font-weight='900' font-size='42' fill='%23ffffff' text-anchor='middle'>BLOX</text><text x='300' y='250' font-family='sans-serif' font-weight='700' font-size='20' fill='%239ca3af' text-anchor='middle'>SALA DE CHAT</text></svg>";
 
+// Helper para escapar HTML y evitar XSS
+function escaparTextoHTML(cadena) {
+  if (!cadena) return "";
+  return String(cadena)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 // ==================================================
 // CONTROL JERÁRQUICO: OWNER SUPREMO Y MODS GLOBALES
 // ==================================================
@@ -132,6 +143,9 @@ let salaSeleccionadaModal = null;
 let filtroCategoriaActual = "all";
 let cancelarEscuchaMensajes = null;
 let cancelarEscuchaSalaActual = null;
+
+// Array local con los IDs de las salas privadas desbloqueadas por el usuario
+let salasPrivadasDesbloqueadas = [];
 
 // Elementos DOM
 const vistaCatalogo = document.getElementById("catalogView");
@@ -283,6 +297,7 @@ onAuthStateChanged(autenticacion, async (usuario) => {
 
       if (snapUsuario.exists()) {
         perfilActual = snapUsuario.data();
+        salasPrivadasDesbloqueadas = perfilActual.salasDesbloqueadas || [];
       } else {
         perfilActual = {
           idUsuario: usuario.uid,
@@ -290,8 +305,10 @@ onAuthStateChanged(autenticacion, async (usuario) => {
           fotoURL: usuario.photoURL || null,
           correo: usuario.email || null,
           ultimaIP: miIPActual || null,
-          fechaUltimoCambioNombre: Date.now()
+          fechaUltimoCambioNombre: Date.now(),
+          salasDesbloqueadas: []
         };
+        salasPrivadasDesbloqueadas = [];
         await setDoc(refDocUsuario, perfilActual);
       }
 
@@ -307,18 +324,23 @@ onAuthStateChanged(autenticacion, async (usuario) => {
         nombreUsuario: nombreSugerido,
         fotoURL: usuario.photoURL || null,
         correo: usuario.email || null,
-        ultimaIP: miIPActual || null
+        ultimaIP: miIPActual || null,
+        salasDesbloqueadas: []
       };
+      salasPrivadasDesbloqueadas = [];
       actualizarInterfazUsuario(perfilActual);
     }
   } else {
     esOwnerSupremo = false;
     esModGlobal = false;
     perfilActual = null;
+    salasPrivadasDesbloqueadas = [];
     if (btnOpenOwnerPanel) btnOpenOwnerPanel.classList.add("hidden");
     if (tarjetaPerfilUsuario) tarjetaPerfilUsuario.classList.add("hidden");
     if (botonAbrirAuth) botonAbrirAuth.classList.remove("hidden");
   }
+
+  dibujarCatalogoSalas();
 });
 
 function actualizarInterfazUsuario(perfil) {
@@ -386,14 +408,12 @@ if (tarjetaPerfilUsuario) {
   });
 }
 
-// CAMBIAR DE CUENTA DESDE EL MODAL DE PERFIL
 if (btnSwitchAccount) {
   btnSwitchAccount.addEventListener("click", async () => {
     if (modalPerfil) modalPerfil.classList.add("hidden");
     await signOut(autenticacion);
     if (idSalaActual && botonSalirSala) botonSalirSala.click();
 
-    // Abrir inmediatamente el modal de inicio de sesión
     if (modalAutenticacion) modalAutenticacion.classList.remove("hidden");
   });
 }
@@ -673,7 +693,7 @@ window.ejecutarSancion = async function(uidABanear, nombreABanear) {
 };
 
 // ==================================================
-// CATÁLOGO DE SALAS PÚBLICAS EN TIEMPO REAL
+// CATÁLOGO DE SALAS PÚBLICAS Y PRIVADAS DESBLOQUEADAS
 // ==================================================
 const refColeccionSalas = collection(baseDatos, "salas");
 
@@ -691,7 +711,18 @@ function dibujarCatalogoSalas() {
   const busqueda = barraBusqueda ? barraBusqueda.value.toLowerCase().trim() : "";
 
   const salasVisibles = listaSalas.filter(sala => {
-    if (sala.esPrivada) return false;
+    // Si la sala es privada, SOLO se muestra en el catálogo si el usuario es el creador
+    // O si la sala fue desbloqueada previamente y guardada en su perfil
+    if (sala.esPrivada) {
+      const esCreador = usuarioActualAuth && (sala.idCreador === usuarioActualAuth.uid);
+      const estaDesbloqueada = salasPrivadasDesbloqueadas.includes(sala.id) || 
+                               (sala.codigo && salasPrivadasDesbloqueadas.includes(sala.codigo));
+
+      if (!esCreador && !estaDesbloqueada) {
+        return false;
+      }
+    }
+
     const coincideCat = (filtroCategoriaActual === "all" || sala.categoria === filtroCategoriaActual);
     const coincideTxt = (sala.titulo || "").toLowerCase().includes(busqueda) || 
                         (sala.descripcion || "").toLowerCase().includes(busqueda);
@@ -699,7 +730,7 @@ function dibujarCatalogoSalas() {
   });
 
   if (salasVisibles.length === 0) {
-    contenedorSalas.innerHTML = `<p style="grid-column: 1/-1; color: var(--text-muted); text-align: center; padding: 40px;">No hay salas públicas disponibles. ¡Sé el primero en crear una!</p>`;
+    contenedorSalas.innerHTML = `<p style="grid-column: 1/-1; color: var(--text-muted); text-align: center; padding: 40px;">No hay salas disponibles en esta sección. ¡Sé el primero en crear una o unirte a una privada!</p>`;
     return;
   }
 
@@ -713,7 +744,7 @@ function dibujarCatalogoSalas() {
       <div class="card-thumb">
         <img src="${portadaSegura}" alt="${escaparTextoHTML(sala.titulo)}" loading="lazy" onerror="this.onerror=null; this.src='${PORTADA_DEFECTO}';" />
         <span class="room-registered-badge">
-          <i class="fa-solid fa-users"></i> ${registrados} registrados
+          <i class="fa-solid ${sala.esPrivada ? 'fa-lock' : 'fa-users'}"></i> ${sala.esPrivada ? 'PRIVADA' : registrados + ' registrados'}
         </span>
       </div>
       <div class="card-content">
@@ -723,6 +754,22 @@ function dibujarCatalogoSalas() {
     `;
     tarjeta.addEventListener("click", () => abrirDetallesSala(sala));
     contenedorSalas.appendChild(tarjeta);
+  });
+}
+
+// Filtros por Categoría
+botonesFiltro.forEach(btn => {
+  btn.addEventListener("click", () => {
+    botonesFiltro.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    filtroCategoriaActual = btn.getAttribute("data-category") || "all";
+    dibujarCatalogoSalas();
+  });
+});
+
+if (barraBusqueda) {
+  barraBusqueda.addEventListener("input", () => {
+    dibujarCatalogoSalas();
   });
 }
 
@@ -745,7 +792,7 @@ function abrirDetallesSala(sala) {
   if (modalTitle) modalTitle.innerText = sala.titulo;
   if (modalDesc) modalDesc.innerText = sala.descripcion;
   if (modalCategory) modalCategory.innerText = (sala.categoria || "GENERAL").toUpperCase();
-  if (modalCode) modalCode.innerText = sala.id;
+  if (modalCode) modalCode.innerText = sala.codigo || sala.id;
   if (modalRegisteredCount) modalRegisteredCount.innerText = registrados;
 
   if (modalDetallesSala) modalDetallesSala.classList.remove("hidden");
@@ -759,6 +806,249 @@ if (btnLaunchChat) {
       unirseASala(salaSeleccionadaModal.id);
     }
   });
+}
+
+// ==================================================
+// UNIRSE A SALA PRIVADA CON CLAVE Y GUARDAR EN PERFIL
+// ==================================================
+const btnOpenJoinPrivate = document.getElementById("btnOpenJoinPrivate");
+const formJoinPrivate = document.getElementById("formJoinPrivate");
+const joinPrivateCodeInput = document.getElementById("joinPrivateCodeInput");
+const joinPrivatePassInput = document.getElementById("joinPrivatePassInput");
+
+if (btnOpenJoinPrivate) {
+  btnOpenJoinPrivate.addEventListener("click", () => {
+    if (modalUnirsePrivada) modalUnirsePrivada.classList.remove("hidden");
+  });
+}
+
+if (formJoinPrivate) {
+  formJoinPrivate.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const codigoIngresado = joinPrivateCodeInput.value.trim();
+    const claveIngresada = joinPrivatePassInput.value.trim();
+
+    if (!codigoIngresado || !claveIngresada) return alert("Completa ambos campos.");
+
+    const salaEncontrada = listaSalas.find(s => 
+      s.esPrivada && 
+      (s.id === codigoIngresado || s.codigo === codigoIngresado) && 
+      s.clave === claveIngresada
+    );
+
+    if (salaEncontrada) {
+      if (usuarioActualAuth) {
+        if (!salasPrivadasDesbloqueadas.includes(salaEncontrada.id)) {
+          salasPrivadasDesbloqueadas.push(salaEncontrada.id);
+        }
+
+        try {
+          const userRef = doc(baseDatos, "usuarios", usuarioActualAuth.uid);
+          await updateDoc(userRef, {
+            salasDesbloqueadas: arrayUnion(salaEncontrada.id)
+          });
+        } catch (err) {
+          console.error("Error al guardar sala privada en perfil:", err);
+        }
+      }
+
+      joinPrivateCodeInput.value = "";
+      joinPrivatePassInput.value = "";
+      if (modalUnirsePrivada) modalUnirsePrivada.classList.add("hidden");
+
+      dibujarCatalogoSalas();
+      unirseASala(salaEncontrada.id);
+    } else {
+      alert("Código de sala o contraseña incorrectos.");
+    }
+  });
+}
+
+// ==================================================
+// CREACIÓN DE SALAS (PÚBLICAS O PRIVADAS)
+// ==================================================
+const btnOpenCreateRoom = document.getElementById("btnOpenCreateRoom");
+const formCreateRoom = document.getElementById("formCreateRoom");
+const createRoomTitle = document.getElementById("createRoomTitle");
+const createRoomDesc = document.getElementById("createRoomDesc");
+const createRoomCategory = document.getElementById("createRoomCategory");
+const createRoomIsPrivate = document.getElementById("createRoomIsPrivate");
+const createPasswordContainer = document.getElementById("createPasswordContainer");
+const createRoomPass = document.getElementById("createRoomPass");
+
+if (btnOpenCreateRoom) {
+  btnOpenCreateRoom.addEventListener("click", () => {
+    if (!usuarioActualAuth) {
+      if (modalAutenticacion) modalAutenticacion.classList.remove("hidden");
+      return;
+    }
+    nuevaFotoPortadaCreateBase64 = null;
+    if (formCreateRoom) formCreateRoom.reset();
+    if (createRoomPreviewImg) createRoomPreviewImg.src = PORTADA_DEFECTO;
+    if (createPasswordContainer) createPasswordContainer.classList.add("hidden");
+    if (modalCrearSala) modalCrearSala.classList.remove("hidden");
+  });
+}
+
+if (createRoomIsPrivate) {
+  createRoomIsPrivate.addEventListener("change", (e) => {
+    if (e.target.checked) {
+      createPasswordContainer.classList.remove("hidden");
+    } else {
+      createPasswordContainer.classList.add("hidden");
+    }
+  });
+}
+
+function actualizarPortadaCrearModal(base64) {
+  nuevaFotoPortadaCreateBase64 = base64;
+  if (createRoomPreviewImg) createRoomPreviewImg.src = base64;
+}
+
+if (inputCreateRoomGallery) {
+  inputCreateRoomGallery.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+      procesarImagenCanvas(e.target.files[0], 600, 350, 0.8, actualizarPortadaCrearModal);
+    }
+  });
+}
+
+if (inputCreateRoomCamera) {
+  inputCreateRoomCamera.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+      procesarImagenCanvas(e.target.files[0], 600, 350, 0.8, actualizarPortadaCrearModal);
+    }
+  });
+}
+
+if (formCreateRoom) {
+  formCreateRoom.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!usuarioActualAuth) return;
+
+    const titulo = createRoomTitle.value.trim();
+    const descripcion = createRoomDesc.value.trim();
+    const categoria = createRoomCategory.value;
+    const esPrivada = createRoomIsPrivate.checked;
+    const clave = esPrivada ? createRoomPass.value.trim() : "";
+
+    if (esPrivada && !clave) return alert("Ingresa una contraseña para la sala privada.");
+
+    const codigoGenerado = "BLX-" + Math.floor(100000 + Math.random() * 900000);
+
+    const nuevaSala = {
+      titulo,
+      descripcion,
+      categoria,
+      esPrivada,
+      clave: esPrivada ? clave : "",
+      codigo: codigoGenerado,
+      imagen: nuevaFotoPortadaCreateBase64 || PORTADA_DEFECTO,
+      idCreador: usuarioActualAuth.uid,
+      nombreCreador: perfilActual.nombreUsuario,
+      usuariosRegistrados: [usuarioActualAuth.uid],
+      bloqueados: [],
+      fechaCreacion: serverTimestamp()
+    };
+
+    try {
+      const docRef = await addDoc(collection(baseDatos, "salas"), nuevaSala);
+      
+      if (esPrivada) {
+        salasPrivadasDesbloqueadas.push(docRef.id);
+        const userRef = doc(baseDatos, "usuarios", usuarioActualAuth.uid);
+        await updateDoc(userRef, {
+          salasDesbloqueadas: arrayUnion(docRef.id)
+        }).catch(() => {});
+      }
+
+      if (modalCrearSala) modalCrearSala.classList.add("hidden");
+      alert(`¡Sala creada con éxito! ${esPrivada ? 'Código: ' + codigoGenerado : ''}`);
+      unirseASala(docRef.id);
+    } catch (error) {
+      console.error("Error al crear la sala:", error);
+      alert("Ocurrió un fallo al crear la sala.");
+    }
+  });
+}
+
+// ==================================================
+// EDICIÓN Y AJUSTES DE SALA
+// ==================================================
+if (btnOpenRoomSettings) {
+  btnOpenRoomSettings.addEventListener("click", () => {
+    if (!salaActualData) return;
+    nuevaFotoPortadaEditBase64 = null;
+    if (editRoomTitle) editRoomTitle.value = salaActualData.titulo || "";
+    if (editRoomDesc) editRoomDesc.value = salaActualData.descripcion || "";
+    if (editRoomPreviewImg) editRoomPreviewImg.src = salaActualData.imagen || PORTADA_DEFECTO;
+
+    if (salaActualData.esPrivada) {
+      if (editPasswordContainer) editPasswordContainer.classList.remove("hidden");
+      if (editRoomPass) editRoomPass.value = salaActualData.clave || "";
+    } else {
+      if (editPasswordContainer) editPasswordContainer.classList.add("hidden");
+    }
+
+    if (modalEditRoom) modalEditRoom.classList.remove("hidden");
+  });
+}
+
+function actualizarPortadaEditarModal(base64) {
+  nuevaFotoPortadaEditBase64 = base64;
+  if (editRoomPreviewImg) editRoomPreviewImg.src = base64;
+}
+
+if (inputEditRoomGallery) {
+  inputEditRoomGallery.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+      procesarImagenCanvas(e.target.files[0], 600, 350, 0.8, actualizarPortadaEditarModal);
+    }
+  });
+}
+
+if (inputEditRoomCamera) {
+  inputEditRoomCamera.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+      procesarImagenCanvas(e.target.files[0], 600, 350, 0.8, actualizarPortadaEditarModal);
+    }
+  });
+}
+
+if (formEditRoom) {
+  formEditRoom.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!idSalaActual || !salaActualData) return;
+
+    const datosGuardar = {
+      titulo: editRoomTitle.value.trim(),
+      descripcion: editRoomDesc.value.trim(),
+      imagen: nuevaFotoPortadaEditBase64 || salaActualData.imagen || PORTADA_DEFECTO
+    };
+
+    if (salaActualData.esPrivada && editRoomPass) {
+      datosGuardar.clave = editRoomPass.value.trim();
+    }
+
+    try {
+      await updateDoc(doc(baseDatos, "salas", idSalaActual), datosGuardar);
+      if (modalEditRoom) modalEditRoom.classList.add("hidden");
+      alert("Configuración de la sala actualizada.");
+    } catch (error) {
+      console.error("Error al actualizar sala:", error);
+      alert("Error al actualizar los ajustes.");
+    }
+  });
+}
+
+function actualizarPermisosInterfazSala() {
+  if (!salaActualData || !usuarioActualAuth) return;
+  const esCreador = salaActualData.idCreador === usuarioActualAuth.uid;
+
+  if (btnOpenRoomSettings) {
+    if (esCreador || esOwnerSupremo) btnOpenRoomSettings.classList.remove("hidden");
+    else btnOpenRoomSettings.classList.add("hidden");
+  }
 }
 
 // ==================================================
@@ -837,82 +1127,67 @@ async function unirseASala(idSala) {
               <i class="fa-solid fa-copy"></i>
             </button>
             <button class="btn-owner-action-id" title="Hacer Moderador Global" onclick="window.promoverAModDirecto('${datos.idUsuario}', '${escaparTextoHTML(datos.nombreUsuario)}')">
-              <i class="fa-solid fa-shield"></i> +Mod
+              <i class="fa-solid fa-user-shield"></i>
             </button>
           </span>
         `;
       }
 
-      // 1. Imagen arriba si existe
-      let imgHTML = "";
-      if (datos.imagenURL) {
-        imgHTML = `<img src="${datos.imagenURL}" class="chat-msg-img" alt="Foto adjunta" onclick="window.abrirVisorImagen('${datos.imagenURL}')" />`;
+      let htmlBotonBan = "";
+      if (tienePoderSancion) {
+        htmlBotonBan = `
+          <button class="btn-ban-message" title="Baneal al usuario" onclick="window.ejecutarSancion('${datos.idUsuario}', '${escaparTextoHTML(datos.nombreUsuario)}')">
+            <i class="fa-solid fa-gavel"></i>
+          </button>
+        `;
       }
 
-      // 2. Pie de foto / texto debajo de la imagen
-      let textoHTML = "";
-      if (datos.texto) {
-        textoHTML = `<div class="chat-caption-text">${escaparTextoHTML(datos.texto)}</div>`;
+      let htmlImagenAdjunta = "";
+      if (datos.imagenAdjunta) {
+        htmlImagenAdjunta = `
+          <div class="message-attachment">
+            <img src="${datos.imagenAdjunta}" alt="adjunto" onclick="window.abrirVisorImagen('${datos.imagenAdjunta}')" />
+          </div>
+        `;
       }
 
       burbuja.innerHTML = `
-        ${!esMio ? `
-          <div class="bubble-author" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
-            <div style="display:flex; align-items:center;">
-              <span>${escaparTextoHTML(datos.nombreUsuario || "Anónimo")}</span>
-              ${infoOwnerHTML}
-            </div>
-            ${tienePoderSancion ? `
-              <button class="btn-ban" title="Banear IP y purgar mensajes" onclick="window.ejecutarSancion('${datos.idUsuario}', '${escaparTextoHTML(datos.nombreUsuario)}')">
-                <i class="fa-solid fa-gavel"></i> ${esOwnerSupremo ? "BAN IP & PURGA" : "EXPULSAR"}
-              </button>
-            ` : ""}
-          </div>
-        ` : ""}
-        ${imgHTML}
-        ${textoHTML}
-        <div class="bubble-time">${datos.hora || ""}</div>
+        <div class="bubble-header">
+          <span class="bubble-author">${escaparTextoHTML(datos.nombreUsuario || 'Usuario')}</span>
+          ${infoOwnerHTML}
+          ${htmlBotonBan}
+        </div>
+        ${htmlImagenAdjunta}
+        <div class="bubble-text">${escaparTextoHTML(datos.texto || '')}</div>
+        <div class="bubble-time">${datos.hora || ''}</div>
       `;
+
       areaMensajes.appendChild(burbuja);
     });
+
     areaMensajes.scrollTop = areaMensajes.scrollHeight;
   });
 }
 
-window.abrirVisorImagen = function(url) {
-  if (fullViewImage && modalImageViewer) {
-    fullViewImage.src = url;
-    modalImageViewer.classList.remove("hidden");
-  }
-};
+// ADJUNTAR IMÁGENES AL CHAT DESDE CÁMARA O GALERÍA
+function prepararAdjuntoChat(base64) {
+  fotoPendienteDeEnvioBase64 = base64;
+  if (chatAttachmentImg) chatAttachmentImg.src = base64;
+  if (chatAttachmentBox) chatAttachmentBox.classList.remove("hidden");
+}
 
-// ==================================================
-// BANDEJA ADJUNTA ESTILO GEMINI / WHATSAPP
-// ==================================================
-function fijarImagenEnBandeja(archivo) {
-  if (!archivo) return;
-  procesarImagenCanvas(archivo, 800, 800, 0.75, (base64) => {
-    fotoPendienteDeEnvioBase64 = base64;
-    if (chatAttachmentImg) chatAttachmentImg.src = base64;
-    if (chatAttachmentBox) chatAttachmentBox.classList.remove("hidden");
-    if (campoTextoMensaje) campoTextoMensaje.focus();
+if (inputChatGallery) {
+  inputChatGallery.addEventListener("change", (e) => {
+    if (e.target.files && e.target.files[0]) {
+      procesarImagenCanvas(e.target.files[0], 800, 800, 0.75, prepararAdjuntoChat);
+    }
   });
 }
 
 if (inputChatCamera) {
   inputChatCamera.addEventListener("change", (e) => {
     if (e.target.files && e.target.files[0]) {
-      fijarImagenEnBandeja(e.target.files[0]);
-      e.target.value = "";
-    }
-  });
-}
-
-if (inputChatGallery) {
-  inputChatGallery.addEventListener("change", (e) => {
-    if (e.target.files && e.target.files[0]) {
-      fijarImagenEnBandeja(e.target.files[0]);
-      e.target.value = "";
+      procesarImagenCanvas(e.target.files[0], 800, 800, 0.75, prepararAdjuntoChat);
     }
   });
 }
@@ -920,396 +1195,101 @@ if (inputChatGallery) {
 if (btnRemoveChatAttachment) {
   btnRemoveChatAttachment.addEventListener("click", () => {
     fotoPendienteDeEnvioBase64 = null;
-    if (chatAttachmentImg) chatAttachmentImg.src = "";
     if (chatAttachmentBox) chatAttachmentBox.classList.add("hidden");
   });
 }
 
-// Enviar Mensaje (Foto arriba + Texto pie de foto)
+// ENVIAR MENSAJE
 async function enviarMensaje() {
-  if (!perfilActual) {
-    if (modalAutenticacion) modalAutenticacion.classList.remove("hidden");
-    return;
-  }
-
-  if (uidsBaneados.has(perfilActual.idUsuario) || (miIPActual && ipsBaneadas.has(miIPActual))) {
-    mostrarPantallaBaneo();
+  if (!idSalaActual || !usuarioActualAuth || !perfilActual) {
+    if (!usuarioActualAuth && modalAutenticacion) {
+      modalAutenticacion.classList.remove("hidden");
+    }
     return;
   }
 
   const texto = campoTextoMensaje ? campoTextoMensaje.value.trim() : "";
-  const imagen = fotoPendienteDeEnvioBase64;
-
-  if (!texto && !imagen) return;
-  if (!idSalaActual) return;
+  if (!texto && !fotoPendienteDeEnvioBase64) return;
 
   const ahora = new Date();
-  const formatoHora = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+  const horaFormateada = ahora.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  const nuevoMensaje = {
+    idUsuario: perfilActual.idUsuario,
+    nombreUsuario: perfilActual.nombreUsuario,
+    texto: texto,
+    imagenAdjunta: fotoPendienteDeEnvioBase64 || null,
+    hora: horaFormateada,
+    fechaCreacion: serverTimestamp()
+  };
 
   if (campoTextoMensaje) campoTextoMensaje.value = "";
   fotoPendienteDeEnvioBase64 = null;
-  if (chatAttachmentImg) chatAttachmentImg.src = "";
   if (chatAttachmentBox) chatAttachmentBox.classList.add("hidden");
 
   try {
-    const paqueteMensaje = {
-      idUsuario: perfilActual.idUsuario,
-      nombreUsuario: perfilActual.nombreUsuario,
-      hora: formatoHora,
-      fechaCreacion: serverTimestamp()
-    };
-
-    if (texto) paqueteMensaje.texto = texto;
-    if (imagen) paqueteMensaje.imagenURL = imagen;
-
-    await addDoc(collection(baseDatos, "salas", idSalaActual, "mensajes"), paqueteMensaje);
+    const refMensajes = collection(baseDatos, "salas", idSalaActual, "mensajes");
+    await addDoc(refMensajes, nuevoMensaje);
   } catch (error) {
-    console.error("Error al registrar mensaje:", error);
-    alert("Hubo un fallo al subir el mensaje o la imagen.");
+    console.error("Error al enviar mensaje:", error);
+    alert("No se pudo enviar el mensaje.");
   }
+}
+
+if (botonEnviarMensaje) {
+  botonEnviarMensaje.addEventListener("click", enviarMensaje);
+}
+
+if (campoTextoMensaje) {
+  campoTextoMensaje.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      enviarMensaje();
+    }
+  });
 }
 
 if (botonSalirSala) {
   botonSalirSala.addEventListener("click", () => {
     if (cancelarEscuchaMensajes) cancelarEscuchaMensajes();
     if (cancelarEscuchaSalaActual) cancelarEscuchaSalaActual();
-    cancelarEscuchaMensajes = null;
-    cancelarEscuchaSalaActual = null;
+
     idSalaActual = null;
     salaActualData = null;
+
     if (vistaChat) vistaChat.classList.add("hidden");
     if (vistaCatalogo) vistaCatalogo.classList.remove("hidden");
-    dibujarCatalogoSalas();
-  });
-}
-
-if (botonEnviarMensaje) botonEnviarMensaje.addEventListener("click", enviarMensaje);
-if (campoTextoMensaje) {
-  campoTextoMensaje.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") enviarMensaje();
-  });
-}
-
-function actualizarPermisosInterfazSala() {
-  if (!salaActualData || !usuarioActualAuth) {
-    if (btnOpenRoomSettings) btnOpenRoomSettings.classList.add("hidden");
-    return;
-  }
-
-  const soyHost = (salaActualData.idCreador === usuarioActualAuth.uid);
-  const soyAdminSala = Array.isArray(salaActualData.admins) && salaActualData.admins.includes(usuarioActualAuth.uid);
-
-  if (btnOpenRoomSettings) {
-    if (soyHost || soyAdminSala || esOwnerSupremo) {
-      btnOpenRoomSettings.classList.remove("hidden");
-    } else {
-      btnOpenRoomSettings.classList.add("hidden");
-    }
-  }
-
-  dibujarListaParticipantes();
-}
-
-function dibujarListaParticipantes() {
-  if (!listaParticipantes || !salaActualData) return;
-  listaParticipantes.innerHTML = "";
-
-  const miUid = usuarioActualAuth ? usuarioActualAuth.uid : null;
-
-  const itemHost = document.createElement("div");
-  itemHost.className = "participant-item";
-
-  let infoHostOwnerHTML = "";
-  if (esOwnerSupremo && salaActualData.idCreador !== miUid) {
-    infoHostOwnerHTML = `
-      <span class="owner-user-tag">
-        ${salaActualData.idCreador.slice(0, 6)}...
-        <button class="btn-owner-action-id" title="Copiar ID" onclick="window.copiarUID('${salaActualData.idCreador}')">
-          <i class="fa-solid fa-copy"></i>
-        </button>
-        <button class="btn-owner-action-id" title="Hacer Moderador Global" onclick="window.promoverAModDirecto('${salaActualData.idCreador}', '${escaparTextoHTML(salaActualData.nombreCreador)}')">
-          <i class="fa-solid fa-shield"></i> +Mod
-        </button>
-      </span>
-    `;
-  }
-
-  itemHost.innerHTML = `
-    <div style="display:flex; align-items:center; gap:8px;">
-      <div class="avatar" style="background:#ffb703; color:#000;">${salaActualData.nombreCreador ? salaActualData.nombreCreador.charAt(0).toUpperCase() : "H"}</div>
-      <span>${escaparTextoHTML(salaActualData.nombreCreador || "Creador")} <span class="badge-host"><i class="fa-solid fa-crown"></i> HOST</span></span>
-    </div>
-    ${infoHostOwnerHTML}
-  `;
-  listaParticipantes.appendChild(itemHost);
-
-  if (miUid && miUid !== salaActualData.idCreador && perfilActual) {
-    const itemYo = document.createElement("div");
-    itemYo.className = "participant-item";
-    const esAdminYo = Array.isArray(salaActualData.admins) && salaActualData.admins.includes(miUid);
-    itemYo.innerHTML = `
-      <div style="display:flex; align-items:center; gap:8px;">
-        <div class="avatar" style="background:#00b06f;">${perfilActual.nombreUsuario.charAt(0).toUpperCase()}</div>
-        <span>${escaparTextoHTML(perfilActual.nombreUsuario)} (Tú) ${esAdminYo ? `<span class="badge-room-admin">ADMIN SALA</span>` : ""}</span>
-      </div>
-    `;
-    listaParticipantes.appendChild(itemYo);
-  }
-}
-
-// ==================================================
-// EDICIÓN DE SALA (PORTADA POR CÁMARA O GALERÍA)
-// ==================================================
-if (inputEditRoomGallery) {
-  inputEditRoomGallery.addEventListener("change", (e) => {
-    if (e.target.files && e.target.files[0]) {
-      procesarImagenCanvas(e.target.files[0], 700, 400, 0.8, (base64) => {
-        nuevaFotoPortadaEditBase64 = base64;
-        if (editRoomPreviewImg) editRoomPreviewImg.src = base64;
-      });
-    }
-  });
-}
-
-if (inputEditRoomCamera) {
-  inputEditRoomCamera.addEventListener("change", (e) => {
-    if (e.target.files && e.target.files[0]) {
-      procesarImagenCanvas(e.target.files[0], 700, 400, 0.8, (base64) => {
-        nuevaFotoPortadaEditBase64 = base64;
-        if (editRoomPreviewImg) editRoomPreviewImg.src = base64;
-      });
-    }
-  });
-}
-
-if (btnOpenRoomSettings) {
-  btnOpenRoomSettings.addEventListener("click", () => {
-    if (!salaActualData) return;
-    nuevaFotoPortadaEditBase64 = null;
-    if (editRoomTitle) editRoomTitle.value = salaActualData.titulo || "";
-    if (editRoomDesc) editRoomDesc.value = salaActualData.descripcion || "";
-    if (editRoomPreviewImg) {
-      editRoomPreviewImg.src = (salaActualData.imagen && salaActualData.imagen.trim().length > 10) ? salaActualData.imagen : PORTADA_DEFECTO;
-    }
-
-    if (editPasswordContainer && editRoomPass) {
-      if (salaActualData.esPrivada) {
-        editPasswordContainer.classList.remove("hidden");
-        editRoomPass.value = salaActualData.clave || "";
-      } else {
-        editPasswordContainer.classList.add("hidden");
-      }
-    }
-
-    if (modalEditRoom) modalEditRoom.classList.remove("hidden");
-  });
-}
-
-if (formEditRoom) {
-  formEditRoom.addEventListener("submit", async (evento) => {
-    evento.preventDefault();
-    if (!salaActualData || !idSalaActual) return;
-
-    const datosActualizados = {
-      titulo: editRoomTitle ? editRoomTitle.value.trim() : salaActualData.titulo,
-      descripcion: editRoomDesc ? editRoomDesc.value.trim() : salaActualData.descripcion,
-      imagen: nuevaFotoPortadaEditBase64 || salaActualData.imagen || PORTADA_DEFECTO
-    };
-
-    if (salaActualData.esPrivada && editRoomPass && editRoomPass.value.trim()) {
-      datosActualizados.clave = editRoomPass.value.trim();
-    }
-
-    try {
-      await updateDoc(doc(baseDatos, "salas", idSalaActual), datosActualizados);
-      if (modalEditRoom) modalEditRoom.classList.add("hidden");
-      alert("Ajustes de sala guardados.");
-    } catch (error) {
-      console.error("Error al editar sala:", error);
-      alert("No se pudieron guardar los cambios.");
-    }
   });
 }
 
 // ==================================================
-// CREACIÓN DE SALAS (PORTADA POR CÁMARA O GALERÍA)
+// VISOR DE IMÁGENES A PANTALLA COMPLETA
 // ==================================================
-if (inputCreateRoomGallery) {
-  inputCreateRoomGallery.addEventListener("change", (e) => {
-    if (e.target.files && e.target.files[0]) {
-      procesarImagenCanvas(e.target.files[0], 700, 400, 0.8, (base64) => {
-        nuevaFotoPortadaCreateBase64 = base64;
-        if (createRoomPreviewImg) createRoomPreviewImg.src = base64;
-      });
-    }
-  });
-}
+window.abrirVisorImagen = function(url) {
+  if (fullViewImage) fullViewImage.src = url;
+  if (modalImageViewer) modalImageViewer.classList.remove("hidden");
+};
 
-if (inputCreateRoomCamera) {
-  inputCreateRoomCamera.addEventListener("change", (e) => {
-    if (e.target.files && e.target.files[0]) {
-      procesarImagenCanvas(e.target.files[0], 700, 400, 0.8, (base64) => {
-        nuevaFotoPortadaCreateBase64 = base64;
-        if (createRoomPreviewImg) createRoomPreviewImg.src = base64;
-      });
-    }
-  });
-}
-
-const btnOpenCreate = document.getElementById("btnOpenCreate");
-const formCreateRoom = document.getElementById("formCreateRoom");
-const createIsPrivate = document.getElementById("createIsPrivate");
-
-if (btnOpenCreate) {
-  btnOpenCreate.addEventListener("click", () => {
-    if (!perfilActual) {
-      if (modalAutenticacion) modalAutenticacion.classList.remove("hidden");
-      return;
-    }
-    nuevaFotoPortadaCreateBase64 = null;
-    if (formCreateRoom) formCreateRoom.reset();
-    if (createRoomPreviewImg) createRoomPreviewImg.src = PORTADA_DEFECTO;
-    const passwordGroup = document.getElementById("passwordGroup");
-    if (passwordGroup) passwordGroup.classList.add("hidden");
-    if (modalCrearSala) modalCrearSala.classList.remove("hidden");
-  });
-}
-
-if (createIsPrivate) {
-  createIsPrivate.addEventListener("change", (evento) => {
-    const grupoClave = document.getElementById("passwordGroup");
-    const campoClave = document.getElementById("createPassword");
-    if (evento.target.checked) {
-      if (grupoClave) grupoClave.classList.remove("hidden");
-      if (campoClave) campoClave.setAttribute("required", "true");
-    } else {
-      if (grupoClave) grupoClave.classList.add("hidden");
-      if (campoClave) campoClave.removeAttribute("required");
-    }
-  });
-}
-
-if (formCreateRoom) {
-  formCreateRoom.addEventListener("submit", async (evento) => {
-    evento.preventDefault();
-    const esPrivada = createIsPrivate ? createIsPrivate.checked : false;
-    const titulo = document.getElementById("createTitle").value.trim();
-    const descripcion = document.getElementById("createDesc").value.trim();
-    const categoria = document.getElementById("createCategory").value;
-    const clave = document.getElementById("createPassword") ? document.getElementById("createPassword").value.trim() : null;
-
-    const idGenerado = (esPrivada ? "VIP-" : "SALA-") + Math.floor(1000 + Math.random() * 9000);
-
-    const datosSala = {
-      titulo: titulo,
-      descripcion: descripcion,
-      categoria: categoria,
-      esPrivada: esPrivada,
-      clave: esPrivada ? clave : null,
-      idCreador: perfilActual.idUsuario,
-      nombreCreador: perfilActual.nombreUsuario,
-      admins: [],
-      bloqueados: [],
-      usuariosRegistrados: [perfilActual.idUsuario],
-      imagen: nuevaFotoPortadaCreateBase64 || PORTADA_DEFECTO,
-      fechaCreacion: serverTimestamp()
-    };
-
-    try {
-      await setDoc(doc(baseDatos, "salas", idGenerado), datosSala);
-
-      await addDoc(collection(baseDatos, "salas", idGenerado, "mensajes"), {
-        nombreUsuario: "Sistema",
-        texto: `Sala fundada por ${perfilActual.nombreUsuario}. ¡Bienvenidos!`,
-        hora: "Ahora",
-        fechaCreacion: serverTimestamp()
-      });
-
-      if (modalCrearSala) modalCrearSala.classList.add("hidden");
-
-      if (esPrivada) {
-        alert(`¡Sala Privada Creada!\n\nID: ${idGenerado}\nContraseña: ${clave}`);
-      }
-    } catch (error) {
-      console.error("Error al crear sala:", error);
-      alert("Hubo un error al registrar la sala.");
-    }
+if (modalImageViewer) {
+  modalImageViewer.addEventListener("click", () => {
+    modalImageViewer.classList.add("hidden");
   });
 }
 
 // ==================================================
-// EVENTOS MODALES Y FILTROS
+// CIERRE UNIVERSAL DE MODALES CON BOTÓN X O OVERLAY
 // ==================================================
-const btnOpenPrivateJoin = document.getElementById("btnOpenPrivateJoin");
-const formPrivateJoin = document.getElementById("formPrivateJoin");
-
-if (btnOpenPrivateJoin) {
-  btnOpenPrivateJoin.addEventListener("click", () => {
-    const errorMsg = document.getElementById("privateErrorMsg");
-    if (errorMsg) errorMsg.classList.add("hidden");
-    if (formPrivateJoin) formPrivateJoin.reset();
-    if (modalUnirsePrivada) modalUnirsePrivada.classList.remove("hidden");
-  });
-}
-
-if (formPrivateJoin) {
-  formPrivateJoin.addEventListener("submit", (evento) => {
-    evento.preventDefault();
-    const codigo = document.getElementById("privateCodeInput").value.trim();
-    const clave = document.getElementById("privatePassInput").value.trim();
-    const mensajeError = document.getElementById("privateErrorMsg");
-
-    const salaEncontrada = listaSalas.find(s => s.id.toLowerCase() === codigo.toLowerCase() && s.esPrivada);
-
-    if (!salaEncontrada || salaEncontrada.clave !== clave) {
-      if (mensajeError) {
-        mensajeError.innerText = "Código o contraseña incorrectos.";
-        mensajeError.classList.remove("hidden");
-      }
-      return;
+document.querySelectorAll(".modal-overlay").forEach(modal => {
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) {
+      modal.classList.add("hidden");
     }
-
-    if (usuarioActualAuth && Array.isArray(salaEncontrada.bloqueados) && salaEncontrada.bloqueados.includes(usuarioActualAuth.uid)) {
-      if (mensajeError) {
-        mensajeError.innerText = "Has sido bloqueado de esta sala privada.";
-        mensajeError.classList.remove("hidden");
-      }
-      return;
-    }
-
-    if (modalUnirsePrivada) modalUnirsePrivada.classList.add("hidden");
-    unirseASala(salaEncontrada.id);
-  });
-}
-
-botonesFiltro.forEach(boton => {
-  boton.addEventListener("click", () => {
-    botonesFiltro.forEach(b => b.classList.remove("active"));
-    boton.classList.add("active");
-    filtroCategoriaActual = boton.dataset.category;
-    dibujarCatalogoSalas();
   });
 });
 
-if (barraBusqueda) barraBusqueda.addEventListener("input", dibujarCatalogoSalas);
-
-document.querySelectorAll(".modal-close").forEach(btn => {
+document.querySelectorAll(".btn-close-modal").forEach(btn => {
   btn.addEventListener("click", () => {
-    const idModal = btn.dataset.close;
-    const modal = document.getElementById(idModal);
+    const modal = btn.closest(".modal-overlay");
     if (modal) modal.classList.add("hidden");
   });
 });
-
-window.addEventListener("click", (evento) => {
-  if (evento.target.classList.contains("modal-overlay")) {
-    evento.target.classList.add("hidden");
-  }
-});
-
-function escaparTextoHTML(cadena) {
-  if (!cadena) return "";
-  return String(cadena).replace(/[&<>'"]/g, 
-    tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
-  );
-}
