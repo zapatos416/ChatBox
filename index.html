@@ -86,7 +86,7 @@
         <button id="btnLeaveRoom" class="btn-icon" title="Volver al catálogo">
           <i class="fa-solid fa-arrow-left"></i>
         </button>
-        <img id="chatRoomImg" src="" alt="Portada" class="chat-room-thumb" />
+        <img id="chatRoomImg" src="" alt="Portada" class="chat-room-thumb" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600';" />
         <div>
           <h2 id="chatRoomTitle">Título del Chat</h2>
           <span id="chatRoomBadge" class="status-badge"><i class="fa-solid fa-circle"></i> En vivo</span>
@@ -104,7 +104,6 @@
         
         <!-- COMPOSER DE CHAT ESTILO GEMINI / WHATSAPP -->
         <div class="chat-composer-wrapper">
-          <!-- Miniatura flotante previa al envío -->
           <div id="chatAttachmentBox" class="chat-attachment-preview-box hidden">
             <img id="chatAttachmentImg" src="" alt="Adjunto" class="chat-attachment-thumb" />
             <div class="chat-attachment-info">
@@ -116,7 +115,6 @@
             </button>
           </div>
 
-          <!-- Controles de archivo, texto y envío -->
           <div class="chat-composer-controls">
             <div class="chat-attach-buttons">
               <label class="btn-icon-attach" title="Tomar foto con la cámara">
@@ -146,7 +144,7 @@
     </div>
   </section>
 
-  <!-- MODAL: VISOR DE IMAGEN A PANTALLA COMPLETA -->
+  <!-- MODAL: VISOR DE IMAGEN -->
   <div id="modalImageViewer" class="modal-overlay hidden" style="z-index: 2000;">
     <div class="image-viewer-container">
       <button class="modal-close" data-close="modalImageViewer"><i class="fa-solid fa-xmark"></i></button>
@@ -173,121 +171,12 @@
     </div>
   </div>
 
-  <!-- MODAL: PERFIL DE USUARIO AVANZADO -->
-  <div id="modalUserProfile" class="modal-overlay hidden">
-    <div class="modal-card modal-sm">
-      <button class="modal-close" data-close="modalUserProfile"><i class="fa-solid fa-xmark"></i></button>
-      <h2>Mi Perfil</h2>
-      <p class="modal-subtitle">Personaliza tu foto y nombre de usuario en BloxChat.</p>
-
-      <form id="formUserProfile">
-        <div class="avatar-edit-container">
-          <div class="profile-preview-avatar" id="avatarPreviewContainer">
-            <span id="avatarPreviewText">U</span>
-            <img id="avatarPreviewImg" src="" alt="Avatar" class="hidden" />
-          </div>
-
-          <div class="avatar-actions">
-            <label class="btn-avatar-action" title="Elegir de galería">
-              <i class="fa-solid fa-image"></i> Galería
-              <input type="file" id="inputAvatarGallery" accept="image/*" class="hidden" />
-            </label>
-            <label class="btn-avatar-action" title="Tomar foto con la cámara">
-              <i class="fa-solid fa-camera"></i> Cámara
-              <input type="file" id="inputAvatarCamera" accept="image/*" capture="user" class="hidden" />
-            </label>
-          </div>
-        </div>
-
-        <div class="form-group" style="margin-top: 16px;">
-          <label>Nombre de Usuario</label>
-          <input type="text" id="profileUsernameInput" required maxlength="20" minlength="3" placeholder="Tu apodo" />
-          <p id="usernameCooldownNotice" class="cooldown-text hidden">
-            <i class="fa-solid fa-clock"></i> Solo puedes cambiar tu nombre cada 60 días. Próximo cambio disponible en: <span id="daysRemainingText">60</span> días.
-          </p>
-        </div>
-
-        <button type="submit" id="btnSaveProfile" class="btn btn-roblox-green btn-block" style="margin-top: 14px;">
-          Guardar Cambios
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: GESTIÓN DE MODERADORES GLOBALES (SOLO OWNER) -->
-  <div id="modalOwnerPanel" class="modal-overlay hidden">
-    <div class="modal-card">
-      <button class="modal-close" data-close="modalOwnerPanel"><i class="fa-solid fa-xmark"></i></button>
-      <h2><i class="fa-solid fa-crown" style="color:#ffd700;"></i> Panel Supremo de Moderación</h2>
-      <p class="modal-subtitle">Asigna o revoca el rango de Moderador Global a otros usuarios.</p>
-
-      <div class="form-group">
-        <label>Asignar nuevo Moderador (Correo o UID)</label>
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="newModInput" placeholder="Introduce el correo o UID exacto" style="flex: 1;" />
-          <button id="btnAddModGlobal" class="btn btn-primary">Asignar Rango</button>
-        </div>
-      </div>
-
-      <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;" />
-
-      <h3>Moderadores Globales Activos</h3>
-      <div id="activeModsList" style="margin-top: 10px; max-height: 220px; overflow-y: auto;">
-        <p style="color: var(--text-muted); font-size: 0.85rem;">Cargando moderadores...</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: AJUSTES / EDITAR SALA -->
-  <div id="modalEditRoom" class="modal-overlay hidden">
-    <div class="modal-card">
-      <button class="modal-close" data-close="modalEditRoom"><i class="fa-solid fa-xmark"></i></button>
-      <h2><i class="fa-solid fa-sliders"></i> Ajustes de la Sala</h2>
-      <p class="modal-subtitle">Modifica la información y portada de este chat.</p>
-
-      <form id="formEditRoom">
-        <div class="form-group">
-          <label>Nombre de la Sala</label>
-          <input type="text" id="editRoomTitle" required maxlength="40" />
-        </div>
-        <div class="form-group">
-          <label>Descripción</label>
-          <input type="text" id="editRoomDesc" required maxlength="120" />
-        </div>
-
-        <div class="form-group">
-          <label>Foto de Portada del Grupo</label>
-          <div class="room-img-preview-box">
-            <img id="editRoomPreviewImg" src="" alt="Portada" />
-            <div class="room-img-buttons">
-              <label class="btn-avatar-action">
-                <i class="fa-solid fa-image"></i> Galería
-                <input type="file" id="inputEditRoomGallery" accept="image/*" class="hidden" />
-              </label>
-              <label class="btn-avatar-action">
-                <i class="fa-solid fa-camera"></i> Cámara
-                <input type="file" id="inputEditRoomCamera" accept="image/*" capture="environment" class="hidden" />
-              </label>
-            </div>
-          </div>
-        </div>
-        
-        <div class="form-group hidden" id="editPasswordContainer">
-          <label>Cambiar Contraseña (Solo salas privadas)</label>
-          <input type="password" id="editRoomPass" placeholder="Nueva contraseña de acceso" />
-        </div>
-
-        <button type="submit" class="btn btn-roblox-green btn-block">Guardar Cambios</button>
-      </form>
-    </div>
-  </div>
-
   <!-- MODAL: DETALLES DE SALA -->
   <div id="modalDetails" class="modal-overlay hidden">
     <div class="modal-card">
       <button class="modal-close" data-close="modalDetails"><i class="fa-solid fa-xmark"></i></button>
       <div class="modal-banner">
-        <img id="modalImg" src="" alt="Vista previa" />
+        <img id="modalImg" src="" alt="Vista previa" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600';" />
         <span class="room-registered-badge">
           <i class="fa-solid fa-users"></i> <span id="modalRegisteredCount">0</span> registrados
         </span>
@@ -308,12 +197,12 @@
     </div>
   </div>
 
-  <!-- MODAL: ENTRAR A SALA PRIVADA -->
+  <!-- MODAL: ENTRAR A SALA PRIVADA POR PRIMERA VEZ -->
   <div id="modalPrivateJoin" class="modal-overlay hidden">
     <div class="modal-card modal-sm">
       <button class="modal-close" data-close="modalPrivateJoin"><i class="fa-solid fa-xmark"></i></button>
       <h2><i class="fa-solid fa-lock"></i> Entrar a Sala Privada</h2>
-      <p class="modal-subtitle">Introduce el identificador y la clave de la sala.</p>
+      <p class="modal-subtitle">Introduce el identificador y la clave para desbloquearla en tu panel.</p>
 
       <form id="formPrivateJoin">
         <div class="form-group">
@@ -325,7 +214,7 @@
           <input type="password" id="privatePassInput" placeholder="Contraseña de acceso" required />
         </div>
         <p id="privateErrorMsg" class="error-text hidden">Código o contraseña incorrectos</p>
-        <button type="submit" class="btn btn-primary btn-block">Desbloquear y Entrar</button>
+        <button type="submit" class="btn btn-primary btn-block">Desbloquear y Guardar</button>
       </form>
     </div>
   </div>
@@ -358,7 +247,7 @@
         <div class="form-group">
           <label>Foto de Portada del Grupo</label>
           <div class="room-img-preview-box">
-            <img id="createRoomPreviewImg" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600" alt="Portada por defecto" />
+            <img id="createRoomPreviewImg" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600" alt="Portada por defecto" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600';" />
             <div class="room-img-buttons">
               <label class="btn-avatar-action">
                 <i class="fa-solid fa-image"></i> Galería
@@ -377,7 +266,7 @@
             <input type="checkbox" id="createIsPrivate" />
             <span class="slider"></span>
           </label>
-          <span>Hacer sala privada (Oculta del catálogo)</span>
+          <span>Hacer sala privada (Solo accesible por código)</span>
         </div>
 
         <div class="form-group hidden" id="passwordGroup">
