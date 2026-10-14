@@ -1,6 +1,4 @@
-/* ==================================================
-   VARIABLES Y ESTILOS BASE GLOBALES
-   ================================================== */
+
 :root {
   --bg-main: #0e1015;
   --bg-card: #181a20;
@@ -36,9 +34,7 @@ body {
   display: none !important;
 }
 
-/* ==================================================
-   BARRA DE NAVEGACIÓN
-   ================================================== */
+
 .roblox-nav {
   height: 64px;
   background: var(--bg-card);
@@ -321,9 +317,7 @@ body {
   margin-left: 4px;
 }
 
-/* ==================================================
-   CATÁLOGO / DISCOVERY
-   ================================================== */
+
 .container {
   max-width: 1200px;
   margin: 0 auto;
@@ -453,9 +447,7 @@ body {
   line-height: 1.35;
 }
 
-/* ==================================================
-   CHATROOM
-   ================================================== */
+
 .chat-container {
   flex: 1;
   display: flex;
@@ -611,9 +603,7 @@ body {
   word-break: break-word;
 }
 
-/* ==================================================
-   COMPOSER DE ENTRADA Y PREVISUALIZACIÓN ESTILO GEMINI
-   ================================================== */
+
 .chat-composer-wrapper {
   background: var(--bg-input);
   border-top: 1px solid var(--border-color);
@@ -773,9 +763,7 @@ body {
   font-weight: 600;
 }
 
-/* ==================================================
-   EXCLUSIVO OWNER
-   ================================================== */
+
 .owner-user-tag {
   display: inline-flex;
   align-items: center;
@@ -861,9 +849,7 @@ body {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
 }
 
-/* ==================================================
-   VENTANAS MODALES
-   ================================================== */
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1149,9 +1135,7 @@ body {
   padding: 24px;
 }
 
-/* ==================================================
-   RESPONSIVIDAD CELULARES (< 768px)
-   ================================================== */
+
 @media (max-width: 768px) {
   .hide-mobile {
     display: none !important;
