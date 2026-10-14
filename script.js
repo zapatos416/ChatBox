@@ -1,6 +1,4 @@
-// ==================================================
-// IMPORTACIONES DE FIREBASE MODULAR (CDN)
-// ==================================================
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { 
   getFirestore, 
@@ -131,9 +129,7 @@ function mostrarPantallaBaneo() {
   `;
 }
 
-// ==================================================
-// ESTADO GLOBAL DE LA APLICACIÓN
-// ==================================================
+
 let usuarioActualAuth = null;
 let perfilActual = null;
 let listaSalas = [];
@@ -230,9 +226,7 @@ let fotoPendienteDeEnvioBase64 = null;
 const modalImageViewer = document.getElementById("modalImageViewer");
 const fullViewImage = document.getElementById("fullViewImage");
 
-// ==================================================
-// FUNCIÓN UNIVERSAL: COMPRESIÓN DE IMÁGENES
-// ==================================================
+
 function procesarImagenCanvas(archivo, maxAncho, maxAlto, calidad, callback) {
   if (!archivo) return;
   const lector = new FileReader();
@@ -266,9 +260,7 @@ function procesarImagenCanvas(archivo, maxAncho, maxAlto, calidad, callback) {
   lector.readAsDataURL(archivo);
 }
 
-// ==================================================
-// CONTROL DE AUTENTICACIÓN
-// ==================================================
+
 onAuthStateChanged(autenticacion, async (usuario) => {
   usuarioActualAuth = usuario;
 
@@ -364,9 +356,7 @@ function actualizarInterfazUsuario(perfil) {
   }
 }
 
-// ==================================================
-// PERFIL Y OPCIÓN DE CAMBIAR DE CUENTA
-// ==================================================
+
 if (tarjetaPerfilUsuario) {
   tarjetaPerfilUsuario.addEventListener("click", (evento) => {
     if (evento.target.closest("#btnLogout")) return;
@@ -477,9 +467,7 @@ if (formPerfil) {
   });
 }
 
-// ==================================================
-// AUTENTICACIÓN
-// ==================================================
+
 if (botonIngresoGoogle) {
   botonIngresoGoogle.addEventListener("click", async () => {
     if (textoErrorAuth) textoErrorAuth.classList.add("hidden");
@@ -524,9 +512,7 @@ if (botonAbrirAuth) {
   });
 }
 
-// ==================================================
-// PANEL DEL OWNER (UID Y ASCENSO DIRECTO)
-// ==================================================
+
 window.copiarUID = function(uid) {
   navigator.clipboard.writeText(uid);
   alert(`ID copiado al portapapeles:\n${uid}`);
@@ -692,9 +678,7 @@ window.ejecutarSancion = async function(uidABanear, nombreABanear) {
   }
 };
 
-// ==================================================
-// CATÁLOGO DE SALAS PÚBLICAS Y PRIVADAS DESBLOQUEADAS
-// ==================================================
+
 const refColeccionSalas = collection(baseDatos, "salas");
 
 onSnapshot(refColeccionSalas, (instantanea) => {
@@ -808,9 +792,7 @@ if (btnLaunchChat) {
   });
 }
 
-// ==================================================
-// UNIRSE A SALA PRIVADA CON CLAVE Y GUARDAR EN PERFIL
-// ==================================================
+
 const btnOpenJoinPrivate = document.getElementById("btnOpenJoinPrivate");
 const formJoinPrivate = document.getElementById("formJoinPrivate");
 const joinPrivateCodeInput = document.getElementById("joinPrivateCodeInput");
@@ -864,9 +846,7 @@ if (formJoinPrivate) {
   });
 }
 
-// ==================================================
-// CREACIÓN DE SALAS (PÚBLICAS O PRIVADAS)
-// ==================================================
+
 const btnOpenCreateRoom = document.getElementById("btnOpenCreateRoom");
 const formCreateRoom = document.getElementById("formCreateRoom");
 const createRoomTitle = document.getElementById("createRoomTitle");
@@ -972,9 +952,7 @@ if (formCreateRoom) {
   });
 }
 
-// ==================================================
-// EDICIÓN Y AJUSTES DE SALA
-// ==================================================
+
 if (btnOpenRoomSettings) {
   btnOpenRoomSettings.addEventListener("click", () => {
     if (!salaActualData) return;
@@ -1051,9 +1029,7 @@ function actualizarPermisosInterfazSala() {
   }
 }
 
-// ==================================================
-// SALA DE CHAT EN VIVO Y MENSAJES CON FOTOS
-// ==================================================
+
 async function unirseASala(idSala) {
   const sala = listaSalas.find(s => s.id === idSala);
   if (!sala) return;
@@ -1262,9 +1238,7 @@ if (botonSalirSala) {
   });
 }
 
-// ==================================================
-// VISOR DE IMÁGENES A PANTALLA COMPLETA
-// ==================================================
+
 window.abrirVisorImagen = function(url) {
   if (fullViewImage) fullViewImage.src = url;
   if (modalImageViewer) modalImageViewer.classList.remove("hidden");
@@ -1276,9 +1250,7 @@ if (modalImageViewer) {
   });
 }
 
-// ==================================================
-// CIERRE UNIVERSAL DE MODALES CON BOTÓN X O OVERLAY
-// ==================================================
+
 document.querySelectorAll(".modal-overlay").forEach(modal => {
   modal.addEventListener("click", (e) => {
     if (e.target === modal) {
