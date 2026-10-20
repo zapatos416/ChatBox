@@ -3,27 +3,27 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>BloxChat - Discovery</title>
+  <title>BloxChat - Plataforma de Chat Profesional</title>
   
   <!-- Fuentes e Iconos -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <!-- BARRA DE NAVEGACIÓN -->
+  <!-- BARRA DE NAVEGACIÓN SUPERIOR -->
   <header class="roblox-nav">
     <div class="nav-left">
-      <div class="logo">
+      <div class="logo" id="navLogoBtn" style="cursor: pointer;">
         <span class="logo-box"></span>
         <span class="logo-text">Blox<span>Chat</span></span>
       </div>
       <nav class="nav-links">
-        <a href="#" class="nav-link active">Descubrir</a>
-        <a href="#" class="nav-link">Comunidad</a>
+        <a href="#" class="nav-link active" id="navLinkDiscover">Descubrir</a>
+        <a href="#" class="nav-link" id="navLinkCommunity">Comunidad</a>
       </nav>
     </div>
 
@@ -39,11 +39,11 @@
         <i class="fa-solid fa-crown"></i> <span class="hide-mobile">Gestionar Moderadores</span>
       </button>
 
-      <button id="btnOpenPrivateJoin" class="btn btn-secondary">
+      <button id="btnOpenJoinPrivate" class="btn btn-secondary">
         <i class="fa-solid fa-key"></i> <span class="hide-mobile">Código Privado</span>
       </button>
 
-      <button id="btnOpenCreate" class="btn btn-primary">
+      <button id="btnOpenCreateRoom" class="btn btn-primary">
         <i class="fa-solid fa-plus"></i> <span class="hide-mobile">Crear Sala</span>
       </button>
 
@@ -66,7 +66,7 @@
     <div class="feed-header">
       <div>
         <h1>Explorar Salas de Chat</h1>
-        <p>Haz clic en cualquier portada para unirte a la conversación</p>
+        <p>Haz clic en cualquier portada para unirte a la conversación en tiempo real</p>
       </div>
       <div class="filter-tabs">
         <button class="filter-btn active" data-category="all">Todos</button>
@@ -79,14 +79,14 @@
     <div id="roomsGrid" class="rooms-grid"></div>
   </main>
 
-  <!-- VISTA DE CHATROOM -->
+  <!-- VISTA DE CHATROOM EN VIVO -->
   <section id="chatView" class="chat-container hidden">
     <div class="chat-header">
       <div class="chat-info">
         <button id="btnLeaveRoom" class="btn-icon" title="Volver al catálogo">
           <i class="fa-solid fa-arrow-left"></i>
         </button>
-        <img id="chatRoomImg" src="" alt="Portada" class="chat-room-thumb" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600';" />
+        <img id="chatRoomImg" src="" alt="Portada" class="chat-room-thumb" />
         <div>
           <h2 id="chatRoomTitle">Título del Chat</h2>
           <span id="chatRoomBadge" class="status-badge"><i class="fa-solid fa-circle"></i> En vivo</span>
@@ -102,13 +102,13 @@
       <div class="chat-main">
         <div class="messages-area" id="messagesArea"></div>
         
-        <!-- COMPOSER DE CHAT ESTILO GEMINI / WHATSAPP -->
+        <!-- COMPOSER DE CHAT MODERNO -->
         <div class="chat-composer-wrapper">
           <div id="chatAttachmentBox" class="chat-attachment-preview-box hidden">
             <img id="chatAttachmentImg" src="" alt="Adjunto" class="chat-attachment-thumb" />
             <div class="chat-attachment-info">
-              <span>Foto adjunta</span>
-              <small>Lista para enviar como foto principal</small>
+              <span>Imagen lista para enviar</span>
+              <small>Adjunta en el mensaje actual</small>
             </div>
             <button type="button" id="btnRemoveChatAttachment" class="btn-remove-attachment" title="Quitar imagen">
               <i class="fa-solid fa-xmark"></i>
@@ -128,9 +128,9 @@
               </label>
             </div>
 
-            <input type="text" id="chatInput" placeholder="Escribe un mensaje o añade un pie de foto..." maxlength="400" autocomplete="off" />
+            <input type="text" id="chatInput" placeholder="Escribe un mensaje o añade una foto..." maxlength="400" autocomplete="off" />
 
-            <button type="button" id="btnSendMessage" class="btn-send" title="Enviar">
+            <button type="button" id="btnSendMessage" class="btn-send" title="Enviar mensaje">
               <i class="fa-solid fa-paper-plane"></i>
             </button>
           </div>
@@ -138,26 +138,37 @@
       </div>
 
       <aside class="chat-sidebar">
-        <h3>Participantes</h3>
+        <h3>Participantes en línea</h3>
         <div id="participantsList" class="participants-list"></div>
       </aside>
     </div>
   </section>
 
-  <!-- MODAL: VISOR DE IMAGEN -->
-  <div id="modalImageViewer" class="modal-overlay hidden" style="z-index: 2000;">
-    <div class="image-viewer-container">
-      <button class="modal-close" data-close="modalImageViewer"><i class="fa-solid fa-xmark"></i></button>
-      <img id="fullViewImage" src="" alt="Vista completa" />
-    </div>
-  </div>
-
-  <!-- MODAL: INICIO DE SESIÓN -->
+  <!-- MODAL: AUTENTICACIÓN PROFESIONAL -->
   <div id="modalAuth" class="modal-overlay hidden">
-    <div class="modal-card modal-sm">
-      <button class="modal-close" data-close="modalAuth"><i class="fa-solid fa-xmark"></i></button>
-      <h2>Bienvenido a BloxChat</h2>
-      <p class="modal-subtitle">Inicia sesión con tu cuenta para crear salas y chatear.</p>
+    <div class="modal-card modal-sm auth-card">
+      <button class="modal-close btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
+      <div class="auth-header-logo">
+        <span class="logo-box"></span>
+        <h2>Blox<span>Chat</span></h2>
+      </div>
+      <p class="modal-subtitle">Inicia sesión o regístrate para chatear y crear salas</p>
+
+      <div class="auth-form-simulated">
+        <div class="form-group">
+          <input type="text" placeholder="Correo electrónico o número de celular" class="auth-input-field" disabled style="opacity: 0.7; cursor: not-allowed;" />
+        </div>
+        <div class="form-group">
+          <input type="password" placeholder="Contraseña" class="auth-input-field" disabled style="opacity: 0.7; cursor: not-allowed;" />
+        </div>
+        <button class="btn btn-primary btn-block" style="opacity: 0.8;" onclick="alert('Por seguridad, utiliza los accesos rápidos oficiales de Google o Facebook abajo.');">
+          Iniciar sesión
+        </button>
+        <div class="auth-links-footer">
+          <a href="#" onclick="alert('Función de recuperación disponible próximamente.'); return false;">¿Olvidaste tu contraseña?</a>
+        </div>
+        <hr class="auth-divider" />
+      </div>
 
       <div class="auth-buttons">
         <button id="btnLoginGoogle" class="btn-auth btn-google">
@@ -167,23 +178,25 @@
           <i class="fa-brands fa-facebook"></i> Continuar con Facebook
         </button>
       </div>
-      <p id="authErrorMsg" class="error-text hidden" style="margin-top: 12px;"></p>
+
+      <p class="auth-create-account-text">¿No tienes cuenta? <a href="#" onclick="alert('Inicia sesión con Google o Facebook para registrarte automáticamente.'); return false;">Regístrate ahora</a></p>
+      <p id="authErrorMsg" class="error-text hidden" style="margin-top: 12px; text-align: center;"></p>
     </div>
   </div>
 
   <!-- MODAL: DETALLES DE SALA -->
   <div id="modalDetails" class="modal-overlay hidden">
     <div class="modal-card">
-      <button class="modal-close" data-close="modalDetails"><i class="fa-solid fa-xmark"></i></button>
+      <button class="modal-close btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
       <div class="modal-banner">
-        <img id="modalImg" src="" alt="Vista previa" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600';" />
+        <img id="modalImg" src="" alt="Vista previa" />
         <span class="room-registered-badge">
           <i class="fa-solid fa-users"></i> <span id="modalRegisteredCount">0</span> registrados
         </span>
       </div>
       <div class="modal-content">
         <h2 id="modalTitle">Nombre de la Sala</h2>
-        <p id="modalDesc">Descripción...</p>
+        <p id="modalDesc">Descripción de la sala...</p>
         
         <div class="modal-meta">
           <span><i class="fa-solid fa-tag"></i> <span id="modalCategory">General</span></span>
@@ -197,24 +210,23 @@
     </div>
   </div>
 
-  <!-- MODAL: ENTRAR A SALA PRIVADA POR PRIMERA VEZ -->
+  <!-- MODAL: UNIRSE A SALA PRIVADA -->
   <div id="modalPrivateJoin" class="modal-overlay hidden">
     <div class="modal-card modal-sm">
-      <button class="modal-close" data-close="modalPrivateJoin"><i class="fa-solid fa-xmark"></i></button>
-      <h2><i class="fa-solid fa-lock"></i> Entrar a Sala Privada</h2>
-      <p class="modal-subtitle">Introduce el identificador y la clave para desbloquearla en tu panel.</p>
+      <button class="modal-close btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
+      <h2><i class="fa-solid fa-lock"></i> Código Privado</h2>
+      <p class="modal-subtitle">Introduce el identificador y clave para desbloquear la sala privada en tu panel.</p>
 
-      <form id="formPrivateJoin">
+      <form id="formJoinPrivate">
         <div class="form-group">
           <label>Código o ID de la Sala</label>
-          <input type="text" id="privateCodeInput" placeholder="Ej: VIP-4521" required />
+          <input type="text" id="joinPrivateCodeInput" placeholder="Ej: BLX-4821" required />
         </div>
         <div class="form-group">
           <label>Contraseña</label>
-          <input type="password" id="privatePassInput" placeholder="Contraseña de acceso" required />
+          <input type="password" id="joinPrivatePassInput" placeholder="Contraseña de acceso" required />
         </div>
-        <p id="privateErrorMsg" class="error-text hidden">Código o contraseña incorrectos</p>
-        <button type="submit" class="btn btn-primary btn-block">Desbloquear y Guardar</button>
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 15px;">Desbloquear y Entrar</button>
       </form>
     </div>
   </div>
@@ -222,22 +234,22 @@
   <!-- MODAL: CREAR SALA -->
   <div id="modalCreateRoom" class="modal-overlay hidden">
     <div class="modal-card">
-      <button class="modal-close" data-close="modalCreateRoom"><i class="fa-solid fa-xmark"></i></button>
+      <button class="modal-close btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
       <h2>Crear Nueva Sala de Chat</h2>
-      <p class="modal-subtitle">Publica un espacio con foto personalizada de tu galería o cámara.</p>
+      <p class="modal-subtitle">Diseña un espacio público o privado con portada personalizada.</p>
 
       <form id="formCreateRoom">
         <div class="form-group">
-          <label>Nombre de la Sala</label>
-          <input type="text" id="createTitle" placeholder="Ej: Grupo de Estudio" required maxlength="40" />
+          <label>Título de la Sala</label>
+          <input type="text" id="createRoomTitle" placeholder="Ej: F1 Fans México" required maxlength="40" />
         </div>
         <div class="form-group">
           <label>Descripción</label>
-          <input type="text" id="createDesc" placeholder="¿De qué trata este chat?" required maxlength="120" />
+          <input type="text" id="createRoomDesc" placeholder="¿De qué trata este chat?" required maxlength="120" />
         </div>
         <div class="form-group">
           <label>Categoría</label>
-          <select id="createCategory">
+          <select id="createRoomCategory">
             <option value="general">General</option>
             <option value="gaming">Gaming</option>
             <option value="chill">Chill</option>
@@ -245,9 +257,9 @@
         </div>
 
         <div class="form-group">
-          <label>Foto de Portada del Grupo</label>
+          <label>Portada de la Sala</label>
           <div class="room-img-preview-box">
-            <img id="createRoomPreviewImg" src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600" alt="Portada por defecto" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600';" />
+            <img id="createRoomPreviewImg" src="" alt="Portada" />
             <div class="room-img-buttons">
               <label class="btn-avatar-action">
                 <i class="fa-solid fa-image"></i> Galería
@@ -261,17 +273,14 @@
           </div>
         </div>
         
-        <div class="form-group checkbox-group">
-          <label class="custom-toggle">
-            <input type="checkbox" id="createIsPrivate" />
-            <span class="slider"></span>
-          </label>
-          <span>Hacer sala privada (Solo accesible por código)</span>
+        <div class="form-group checkbox-group" style="display: flex; align-items: center; gap: 10px; margin: 15px 0;">
+          <input type="checkbox" id="createRoomIsPrivate" style="width: 18px; height: 18px; accent-color: #00b06f;" />
+          <label for="createRoomIsPrivate" style="margin: 0; cursor: pointer;">Hacer sala privada (Solo accesible por código y contraseña)</label>
         </div>
 
-        <div class="form-group hidden" id="passwordGroup">
-          <label>Contraseña Requerida</label>
-          <input type="password" id="createPassword" placeholder="Define una contraseña para entrar" />
+        <div class="form-group hidden" id="createPasswordContainer">
+          <label>Contraseña de Acceso</label>
+          <input type="password" id="createRoomPass" placeholder="Define una contraseña secreta" />
         </div>
 
         <button type="submit" class="btn btn-primary btn-block">Publicar Sala</button>
@@ -279,6 +288,113 @@
     </div>
   </div>
 
+  <!-- MODAL: PERFIL DE USUARIO -->
+  <div id="modalUserProfile" class="modal-overlay hidden">
+    <div class="modal-card modal-sm">
+      <button class="modal-close btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
+      <h2>Configuración de Perfil</h2>
+      <p class="modal-subtitle">Personaliza tu apodo e imagen pública</p>
+
+      <form id="formUserProfile">
+        <div class="profile-avatar-container" style="text-align: center; margin-bottom: 20px;">
+          <div class="avatar-preview-circle" style="width: 80px; height: 80px; border-radius: 50%; background: #00b06f; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; overflow: hidden; position: relative;">
+            <span id="avatarPreviewText">U</span>
+            <img id="avatarPreviewImg" class="hidden" style="width: 100%; height: 100%; object-fit: cover;" />
+          </div>
+          <div style="display: flex; justify-content: center; gap: 10px;">
+            <label class="btn-avatar-action" style="padding: 6px 12px; font-size: 0.8rem; background: #2b2f38; border-radius: 6px; cursor: pointer; color: white;">
+              <i class="fa-solid fa-image"></i> Cambiar
+              <input type="file" id="inputAvatarGallery" accept="image/*" class="hidden" />
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Nombre de Usuario</label>
+          <input type="text" id="profileUsernameInput" required maxlength="25" />
+          <small id="usernameCooldownNotice" class="hidden" style="color: #f39c12; display: block; margin-top: 5px;">
+            Podrás volver a cambiar tu nombre en <span id="daysRemainingText">60</span> días.
+          </small>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">Guardar Cambios</button>
+          <button type="button" id="btnSwitchAccount" class="btn btn-secondary" style="background: #d90429; color: white; border: none;" title="Cerrar sesión actual y cambiar de cuenta">
+            Cambiar Cuenta
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: PANEL DE MODERACIÓN OWNER -->
+  <div id="modalOwnerPanel" class="modal-overlay hidden">
+    <div class="modal-card">
+      <button class="modal-close btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
+      <h2><i class="fa-solid fa-crown" style="color: #ffd700;"></i> Panel de Owner Supremo</h2>
+      <p class="modal-subtitle">Asigna rangos de Moderadores Globales en tiempo real</p>
+
+      <div class="form-group" style="margin-top: 15px;">
+        <label>Correo Electrónico o UID del usuario</label>
+        <div style="display: flex; gap: 10px;">
+          <input type="text" id="newModInput" placeholder="usuario@gmail.com o UID..." style="flex: 1;" />
+          <button id="btnAddModGlobal" class="btn btn-primary" style="white-space: nowrap;">Otorgar Rango MOD</button>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <h3>Moderadores Globales Activos</h3>
+        <div id="activeModsList" style="margin-top: 10px; max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AJUSTES DE SALA -->
+  <div id="modalEditRoom" class="modal-overlay hidden">
+    <div class="modal-card">
+      <button class="modal-close btn-close-modal"><i class="fa-solid fa-xmark"></i></button>
+      <h2>Ajustes de la Sala</h2>
+      <p class="modal-subtitle">Modifica la información general de tu sala</p>
+
+      <form id="formEditRoom">
+        <div class="form-group">
+          <label>Título</label>
+          <input type="text" id="editRoomTitle" required maxlength="40" />
+        </div>
+        <div class="form-group">
+          <label>Descripción</label>
+          <input type="text" id="editRoomDesc" required maxlength="120" />
+        </div>
+        <div class="form-group">
+          <label>Nueva Portada</label>
+          <div class="room-img-preview-box">
+            <img id="editRoomPreviewImg" src="" alt="Portada" />
+            <div class="room-img-buttons">
+              <label class="btn-avatar-action">
+                <i class="fa-solid fa-image"></i> Galería
+                <input type="file" id="inputEditRoomGallery" accept="image/*" class="hidden" />
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="form-group hidden" id="editPasswordContainer">
+          <label>Contraseña de la Sala Privada</label>
+          <input type="text" id="editRoomPass" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Guardar Cambios</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- VISOR DE IMÁGENES A PANTALLA COMPLETA -->
+  <div id="modalImageViewer" class="modal-overlay hidden" style="z-index: 3000; background: rgba(0,0,0,0.9);">
+    <div class="image-viewer-container" style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+      <button class="modal-close" style="position: absolute; top: 20px; right: 20px; font-size: 2rem; color: white; background: none; border: none; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+      <img id="fullViewImage" src="" alt="Vista completa" style="max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 8px;" />
+    </div>
+  </div>
+
+  <!-- SCRIPT PRINCIPAL -->
   <script type="module" src="script.js"></script>
 </body>
 </html>
