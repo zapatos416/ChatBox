@@ -1,32 +1,31 @@
-
+/* ==================================================
+   ESTILOS GENERALES Y VARIABLES DE BLOXCHAT
+   ================================================== */
 :root {
-  --bg-main: #0e1015;
-  --bg-card: #181a20;
-  --bg-input: #22252e;
-  --border-color: #2b2f3a;
-  --text-main: #f3f4f6;
+  --bg-main: #121418;
+  --bg-card: #1b1e26;
+  --bg-card-hover: #232731;
+  --bg-input: #272b36;
+  --accent-green: #00b06f;
+  --accent-green-hover: #00965f;
+  --accent-orange: #ff9f1c;
+  --text-main: #ffffff;
   --text-muted: #9ca3af;
-  --roblox-green: #00b06f;
-  --roblox-green-hover: #009960;
-  --primary-accent: #3a86ff;
-  --danger-color: #d90429;
+  --border-color: #2f3542;
+  --danger: #d90429;
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  font-family: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
-  -webkit-tap-highlight-color: transparent;
+  font-family: 'Hanken Grotesk', sans-serif;
 }
 
 body {
   background-color: var(--bg-main);
   color: var(--text-main);
   min-height: 100vh;
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
   overflow-x: hidden;
 }
 
@@ -34,54 +33,54 @@ body {
   display: none !important;
 }
 
-
+/* ==================================================
+   BARRA DE NAVEGACIÓN
+   ================================================== */
 .roblox-nav {
-  height: 64px;
-  background: var(--bg-card);
-  border-bottom: 1px solid var(--border-color);
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  align-items: center;
+  background-color: var(--bg-card);
+  padding: 12px 24px;
+  border-bottom: 1px solid var(--border-color);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
 }
 
-.nav-left {
+.nav-left, .nav-right, .nav-center {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 10px;
-  cursor: pointer;
+  gap: 8px;
 }
 
 .logo-box {
-  width: 24px;
-  height: 24px;
-  background: var(--roblox-green);
+  width: 28px;
+  height: 28px;
+  background: var(--accent-green);
   border-radius: 6px;
-  transform: rotate(-10deg);
 }
 
 .logo-text {
-  font-size: 1.3rem;
   font-weight: 900;
+  font-size: 1.25rem;
   letter-spacing: -0.5px;
 }
 
 .logo-text span {
-  color: var(--roblox-green);
+  color: var(--accent-green);
 }
 
 .nav-links {
   display: flex;
-  gap: 16px;
+  gap: 12px;
+  margin-left: 20px;
 }
 
 .nav-link {
@@ -89,28 +88,31 @@ body {
   text-decoration: none;
   font-weight: 600;
   font-size: 0.95rem;
-  transition: 0.2s color;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.2s;
 }
 
-.nav-link.active,
-.nav-link:hover {
+.nav-link:hover, .nav-link.active {
   color: var(--text-main);
-}
-
-.nav-center {
-  flex: 1;
-  max-width: 420px;
-  margin: 0 20px;
+  background: var(--bg-input);
 }
 
 .search-box {
+  position: relative;
   background: var(--bg-input);
-  border: 1px solid var(--border-color);
   border-radius: 8px;
+  padding: 6px 14px;
   display: flex;
   align-items: center;
-  padding: 8px 14px;
   gap: 10px;
+  width: 280px;
+  border: 1px solid transparent;
+  transition: border 0.2s;
+}
+
+.search-box:focus-within {
+  border-color: var(--accent-green);
 }
 
 .search-box i {
@@ -118,7 +120,7 @@ body {
 }
 
 .search-box input {
-  background: transparent;
+  background: none;
   border: none;
   color: var(--text-main);
   outline: none;
@@ -126,404 +128,283 @@ body {
   font-size: 0.9rem;
 }
 
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .btn {
-  border: none;
   padding: 8px 16px;
   border-radius: 8px;
   font-weight: 700;
+  font-size: 0.9rem;
   cursor: pointer;
-  display: inline-flex;
+  border: none;
+  display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.88rem;
-  transition: 0.2s transform, 0.2s background;
-}
-
-.btn:active {
-  transform: scale(0.97);
+  transition: all 0.2s;
 }
 
 .btn-primary {
-  background: var(--roblox-green);
-  color: #fff;
+  background: var(--accent-green);
+  color: white;
 }
 
 .btn-primary:hover {
-  background: var(--roblox-green-hover);
+  background: var(--accent-green-hover);
 }
 
 .btn-secondary {
   background: var(--bg-input);
-  color: var(--text-main);
-  border: 1px solid var(--border-color);
+  color: white;
 }
 
 .btn-secondary:hover {
-  background: #2c303b;
+  background: #323846;
 }
 
 .btn-roblox-login {
-  background: #fff;
-  color: #000;
-}
-
-.btn-roblox-green {
-  background: var(--roblox-green);
-  color: #fff;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: 0.2s background;
-}
-
-.btn-roblox-green:hover {
-  background: var(--roblox-green-hover);
-}
-
-.btn-switch-account {
-  background: var(--bg-input);
-  color: #3a86ff;
-  border: 1px solid #3a86ff;
-  padding: 10px;
-  font-size: 0.9rem;
-  font-weight: 800;
-  border-radius: 8px;
-  justify-content: center;
-  transition: 0.2s all;
-}
-
-.btn-switch-account:hover {
-  background: #3a86ff;
-  color: #fff;
-}
-
-.btn-block {
-  width: 100%;
+  background: var(--accent-orange);
+  color: white;
 }
 
 .btn-owner-panel {
-  background: linear-gradient(135deg, #ffd700, #ff8c00);
-  color: #000;
-  border: none;
-  font-weight: 800;
-  padding: 7px 12px;
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: white;
+  padding: 8px 14px;
   border-radius: 8px;
+  font-weight: 700;
+  border: none;
   cursor: pointer;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.85rem;
-  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
 }
 
 .user-chip {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   background: var(--bg-input);
-  padding: 4px 10px;
+  padding: 4px 12px 4px 6px;
   border-radius: 20px;
-  border: 1px solid var(--border-color);
   cursor: pointer;
 }
 
-.user-chip:hover {
-  border-color: var(--roblox-green);
-}
-
-.avatar {
-  width: 28px;
-  height: 28px;
+.user-chip .avatar {
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: var(--roblox-green);
+  background: var(--accent-green);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
-  font-size: 0.85rem;
+  font-weight: bold;
   overflow: hidden;
 }
 
-.avatar img {
+.user-chip .avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
 .btn-logout {
-  background: transparent;
+  background: none;
   border: none;
-  color: var(--text-muted);
+  color: var(--danger);
   cursor: pointer;
-  margin-left: 4px;
+  font-size: 1rem;
+  padding: 4px;
 }
 
-.btn-logout:hover {
-  color: var(--danger-color);
-}
-
-.badge-owner {
-  background: linear-gradient(135deg, #ffd700, #ff8c00);
-  color: #000;
-  font-size: 0.65rem;
-  font-weight: 900;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.badge-mod-global {
-  background: #7209b7;
-  color: #fff;
-  font-size: 0.65rem;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.badge-host {
-  background: #ffb703;
-  color: #000;
-  font-size: 0.65rem;
-  font-weight: 900;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 4px;
-}
-
-.badge-room-admin {
-  background: #3a86ff;
-  color: #fff;
-  font-size: 0.65rem;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 4px;
-  margin-left: 4px;
-}
-
-
+/* ==================================================
+   CONTENEDOR Y CATÁLOGO DE SALAS
+   ================================================== */
 .container {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 24px;
-  width: 100%;
-  flex: 1;
+  padding: 32px 24px;
 }
 
 .feed-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
   flex-wrap: wrap;
   gap: 16px;
 }
 
 .feed-header h1 {
-  font-size: 1.8rem;
-  font-weight: 900;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
 .feed-header p {
   color: var(--text-muted);
   font-size: 0.95rem;
+  margin-top: 4px;
 }
 
 .filter-tabs {
   display: flex;
   gap: 8px;
+  background: var(--bg-card);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
 }
 
 .filter-btn {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+  background: none;
+  border: none;
   color: var(--text-muted);
-  padding: 6px 14px;
-  border-radius: 20px;
+  padding: 6px 16px;
+  font-weight: 600;
   font-size: 0.85rem;
-  font-weight: 700;
+  border-radius: 6px;
   cursor: pointer;
-  transition: 0.2s all;
+  transition: all 0.2s;
 }
 
-.filter-btn.active,
-.filter-btn:hover {
-  background: var(--text-main);
-  color: #000;
-  border-color: var(--text-main);
+.filter-btn.active, .filter-btn:hover {
+  background: var(--bg-input);
+  color: var(--text-main);
 }
 
 .rooms-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
 }
 
 .room-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 14px;
   overflow: hidden;
+  border: 1px solid var(--border-color);
   cursor: pointer;
-  transition: 0.2s transform, 0.2s border-color;
-  position: relative;
-  display: flex;
-  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 }
 
 .room-card:hover {
   transform: translateY(-4px);
-  border-color: var(--roblox-green);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+  border-color: var(--accent-green);
 }
 
 .card-thumb {
   position: relative;
   width: 100%;
-  height: 150px;
-  background: linear-gradient(135deg, #1f232d 0%, #111317 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+  height: 160px;
+  background: var(--bg-input);
 }
 
 .card-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
 }
 
 .room-registered-badge {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
-  background: rgba(14, 16, 21, 0.88);
+  bottom: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.75);
   backdrop-filter: blur(4px);
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 800;
-  padding: 3px 8px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
   align-items: center;
-  gap: 4px;
-  z-index: 2;
+  gap: 6px;
 }
 
 .card-content {
-  padding: 14px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  padding: 16px;
 }
 
 .card-title {
-  font-size: 1.05rem;
-  font-weight: 800;
-  margin-bottom: 4px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
 }
 
 .card-desc {
-  color: var(--text-muted);
   font-size: 0.85rem;
-  line-height: 1.35;
-}
-
-
-.chat-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  max-width: 1200px;
-  margin: 16px auto;
-  width: 95%;
-  height: calc(100vh - 100px);
-  height: calc(100dvh - 100px);
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
+  color: var(--text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
+/* ==================================================
+   VISTA DE CHATROOM
+   ================================================== */
+.chat-container {
+  height: calc(100vh - 65px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-main);
+}
+
 .chat-header {
-  padding: 12px 20px;
-  background: var(--bg-input);
-  border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 12px 24px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .chat-info {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.btn-icon {
-  background: transparent;
-  border: none;
-  color: var(--text-main);
-  font-size: 1.1rem;
-  cursor: pointer;
+  gap: 14px;
 }
 
 .chat-room-thumb {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 8px;
   object-fit: cover;
-  background: var(--bg-card);
+}
+
+.chat-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
 }
 
 .status-badge {
   font-size: 0.75rem;
-  color: var(--roblox-green);
-  font-weight: 700;
+  color: var(--accent-green);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  font-weight: 600;
 }
 
-.status-badge i {
-  font-size: 0.55rem;
-}
-
-.btn-room-settings {
-  background: var(--bg-card);
-  color: var(--text-main);
-  border: 1px solid var(--border-color);
-  padding: 6px 12px;
-  border-radius: 6px;
+.btn-icon {
+  background: var(--bg-input);
+  border: none;
+  color: white;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   cursor: pointer;
-  font-weight: 700;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.8rem;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.btn-icon:hover {
+  background: #323846;
 }
 
 .chat-body {
-  flex: 1;
   display: flex;
+  flex: 1;
   overflow: hidden;
 }
 
@@ -531,221 +412,33 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100%;
   position: relative;
+  background: #15181e;
 }
 
 .messages-area {
   flex: 1;
-  padding: 18px;
+  padding: 20px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.chat-bubble {
-  max-width: 70%;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 0.92rem;
-  line-height: 1.4;
-  word-break: break-word;
-}
-
-.bubble-user {
-  align-self: flex-end;
-  background: var(--roblox-green);
-  color: #fff;
-  border-bottom-right-radius: 2px;
-}
-
-.bubble-other {
-  align-self: flex-start;
-  background: var(--bg-input);
-  color: var(--text-main);
-  border-bottom-left-radius: 2px;
-  border: 1px solid var(--border-color);
-}
-
-.bubble-author {
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #3a86ff;
-  margin-bottom: 4px;
-}
-
-.bubble-time {
-  font-size: 0.65rem;
-  opacity: 0.7;
-  text-align: right;
-  margin-top: 6px;
-}
-
-.chat-msg-img {
-  max-width: 100%;
-  max-height: 280px;
-  border-radius: 8px;
-  display: block;
-  object-fit: cover;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.chat-msg-img:hover {
-  opacity: 0.92;
-}
-
-.chat-caption-text {
-  margin-top: 6px;
-  font-size: 0.92rem;
-  line-height: 1.35;
-  word-break: break-word;
-}
-
-
-.chat-composer-wrapper {
-  background: var(--bg-input);
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  padding: 10px 16px;
-  gap: 8px;
-}
-
-.chat-attachment-preview-box {
-  display: inline-flex;
-  align-items: center;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  padding: 6px 12px;
-  border-radius: 12px;
-  width: fit-content;
-  max-width: 100%;
-  gap: 12px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-  animation: fadeInAttachment 0.2s ease-out;
-}
-
-@keyframes fadeInAttachment {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.chat-attachment-thumb {
-  width: 56px;
-  height: 56px;
-  border-radius: 8px;
-  object-fit: cover;
-  border: 1px solid var(--border-color);
-}
-
-.chat-attachment-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.chat-attachment-info span {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.chat-attachment-info small {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-}
-
-.btn-remove-attachment {
-  background: rgba(217, 4, 41, 0.2);
-  border: none;
-  color: var(--danger-color);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-  transition: 0.2s background, 0.2s color;
-}
-
-.btn-remove-attachment:hover {
-  background: var(--danger-color);
-  color: #fff;
-}
-
-.chat-composer-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-}
-
-.chat-attach-buttons {
-  display: flex;
-  gap: 6px;
-}
-
-.btn-icon-attach {
-  background: var(--bg-card);
-  color: var(--text-muted);
-  width: 38px;
-  height: 38px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border: 1px solid var(--border-color);
-  transition: 0.2s all;
-}
-
-.btn-icon-attach:hover {
-  color: var(--text-main);
-  border-color: var(--roblox-green);
-}
-
-.chat-composer-controls input {
-  flex: 1;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 20px;
-  padding: 10px 16px;
-  color: var(--text-main);
-  outline: none;
-  font-size: 0.95rem;
-}
-
-.chat-composer-controls input:focus {
-  border-color: var(--roblox-green);
-}
-
-.btn-send {
-  background: var(--roblox-green);
-  border: none;
-  color: #fff;
-  width: 44px;
-  height: 40px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1rem;
+  gap: 14px;
 }
 
 .chat-sidebar {
-  width: 260px;
-  background: var(--bg-input);
+  width: 280px;
+  background: var(--bg-card);
   border-left: 1px solid var(--border-color);
-  padding: 16px;
+  padding: 20px;
   overflow-y: auto;
 }
 
 .chat-sidebar h3 {
   font-size: 0.9rem;
-  margin-bottom: 12px;
   color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
 }
 
 .participants-list {
@@ -757,119 +450,192 @@ body {
 .participant-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 0.88rem;
+  gap: 10px;
+  font-size: 0.9rem;
   font-weight: 600;
 }
 
-
-.owner-user-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  font-family: monospace;
-  margin-left: 6px;
-}
-
-.btn-owner-action-id {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: #ffb703;
-  font-size: 0.65rem;
-  padding: 2px 5px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  transition: 0.2s all;
-}
-
-.btn-owner-action-id:hover {
-  background: #ffb703;
-  color: #000;
-}
-
-.btn-ban {
-  background: var(--danger-color);
-  color: #fff;
-  border: none;
-  font-size: 0.68rem;
-  font-weight: 800;
-  padding: 2px 7px;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 8px;
-}
-
-/* ==================================================
-   PORTADAS DE SALAS (CÁMARA / GALERÍA)
-   ================================================== */
-.room-img-preview-box {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.room-img-preview-box img {
-  width: 100%;
-  height: 140px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: #1f232d;
-}
-
-.room-img-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-/* Visor de imágenes a pantalla completa */
-.image-viewer-container {
-  max-width: 90vw;
-  max-height: 90vh;
+/* Burbujas de Chat */
+.chat-bubble {
+  max-width: 65%;
+  padding: 12px 16px;
+  border-radius: 12px;
   position: relative;
+  word-break: break-word;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.bubble-other {
+  background: var(--bg-card);
+  align-self: flex-start;
+  border-bottom-left-radius: 2px;
+}
+
+.bubble-user {
+  background: var(--accent-green);
+  color: white;
+  align-self: flex-end;
+  border-bottom-right-radius: 2px;
+}
+
+.bubble-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.bubble-author {
+  font-weight: 700;
+}
+
+.bubble-text {
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.bubble-time {
+  font-size: 0.65rem;
+  text-align: right;
+  margin-top: 4px;
+  opacity: 0.7;
+}
+
+.message-attachment img {
+  max-width: 100%;
+  max-height: 220px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+/* Composer de Chat */
+.chat-composer-wrapper {
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+}
+
+.chat-composer-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-input);
+  border-radius: 12px;
+  padding: 6px 12px;
+}
+
+.chat-attach-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-icon-attach {
+  color: var(--text-muted);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s;
 }
 
-.image-viewer-container img {
-  max-width: 100%;
-  max-height: 85vh;
+.btn-icon-attach:hover {
+  background: rgba(255,255,255,0.1);
+  color: white;
+}
+
+.chat-composer-controls input[type="text"] {
+  flex: 1;
+  background: none;
+  border: none;
+  color: white;
+  outline: none;
+  font-size: 0.95rem;
+}
+
+.btn-send {
+  background: var(--accent-green);
+  color: white;
+  border: none;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
 }
 
+.btn-send:hover {
+  background: var(--accent-green-hover);
+}
 
+.chat-attachment-preview-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-main);
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.chat-attachment-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.chat-attachment-info {
+  flex: 1;
+  font-size: 0.85rem;
+}
+
+.chat-attachment-info small {
+  color: var(--text-muted);
+  display: block;
+}
+
+.btn-remove-attachment {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+/* ==================================================
+   MODALES Y VENTANAS EMERGENTES
+   ================================================== */
 .modal-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
-  z-index: 1000;
+  backdrop-filter: blur(5px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  z-index: 2000;
+  padding: 20px;
 }
 
 .modal-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
+  border-radius: 16px;
   width: 100%;
-  max-width: 520px;
-  padding: 24px;
+  max-width: 480px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
   position: relative;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
 }
 
 .modal-sm {
@@ -880,22 +646,92 @@ body {
   position: absolute;
   top: 16px;
   right: 16px;
-  background: transparent;
+  background: rgba(0,0,0,0.5);
   border: none;
-  color: var(--text-muted);
-  font-size: 1.1rem;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   z-index: 10;
+  transition: background 0.2s;
 }
 
-.modal-subtitle {
+.modal-close:hover {
+  background: var(--danger);
+}
+
+.modal-banner {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  background: var(--bg-input);
+}
+
+.modal-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.modal-content {
+  padding: 24px;
+}
+
+.modal-content h2 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.modal-content p {
   color: var(--text-muted);
-  font-size: 0.88rem;
-  margin: 4px 0 16px 0;
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+  line-height: 1.5;
 }
 
+.modal-meta {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.modal-meta span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-roblox-green {
+  background: var(--accent-green);
+  color: white;
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 1rem;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.2s;
+}
+
+.btn-roblox-green:hover {
+  background: var(--accent-green-hover);
+}
+
+/* Formularios dentro de modales */
 .form-group {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .form-group label {
@@ -903,66 +739,81 @@ body {
   font-size: 0.85rem;
   font-weight: 700;
   margin-bottom: 6px;
+  color: var(--text-muted);
 }
 
-.form-group input,
-.form-group select {
+.form-group input, .form-group select {
   width: 100%;
   background: var(--bg-input);
   border: 1px solid var(--border-color);
+  padding: 10px 14px;
   border-radius: 8px;
-  padding: 10px;
-  color: var(--text-main);
+  color: white;
+  font-size: 0.95rem;
   outline: none;
-  font-size: 0.9rem;
 }
 
-.checkbox-group {
+.form-group input:focus, .form-group select:focus {
+  border-color: var(--accent-green);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.modal-subtitle {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 20px;
+}
+
+/* Estilos de Autenticación Profesional */
+.auth-card {
+  padding: 30px;
+  text-align: center;
+}
+
+.auth-header-logo {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
+  margin-bottom: 8px;
 }
 
-.custom-toggle {
-  position: relative;
-  display: inline-block;
-  width: 44px;
-  height: 24px;
+.auth-header-logo h2 {
+  font-size: 1.6rem;
+  font-weight: 900;
 }
 
-.custom-toggle input {
-  opacity: 0;
-  width: 0;
-  height: 0;
+.auth-header-logo span {
+  color: var(--accent-green);
 }
 
-.slider {
-  position: absolute;
-  cursor: pointer;
-  inset: 0;
-  background-color: var(--border-color);
-  transition: 0.3s;
-  border-radius: 24px;
+.auth-input-field {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  padding: 12px;
+  border-radius: 8px;
+  color: white;
+  margin-bottom: 12px;
 }
 
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  transition: 0.3s;
-  border-radius: 50%;
+.auth-links-footer {
+  margin: 12px 0 20px 0;
+  font-size: 0.85rem;
 }
 
-.custom-toggle input:checked + .slider {
-  background-color: var(--roblox-green);
+.auth-links-footer a {
+  color: var(--accent-green);
+  text-decoration: none;
 }
 
-.custom-toggle input:checked + .slider:before {
-  transform: translateX(20px);
+.auth-divider {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 20px 0;
 }
 
 .auth-buttons {
@@ -973,292 +824,96 @@ body {
 
 .btn-auth {
   width: 100%;
-  padding: 11px;
+  padding: 12px;
   border-radius: 8px;
-  border: 1px solid var(--border-color);
   font-weight: 700;
-  font-size: 0.92rem;
+  border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
+  font-size: 0.95rem;
 }
 
 .btn-google {
-  background: #fff;
-  color: #000;
+  background: #ffffff;
+  color: #121418;
 }
 
 .btn-facebook {
   background: #1877f2;
-  color: #fff;
-  border: none;
+  color: #ffffff;
 }
 
-.error-text {
-  color: var(--danger-color);
+.auth-create-account-text {
+  margin-top: 20px;
   font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.auth-create-account-text a {
+  color: var(--accent-green);
+  text-decoration: none;
   font-weight: 700;
 }
 
-.modal-banner {
-  position: relative;
-  width: 100%;
-  height: 180px;
-  border-radius: 10px;
-  overflow: hidden;
-  margin-bottom: 14px;
-  background: #1f232d;
+/* Insignias */
+.badge-owner {
+  background: #ffd700;
+  color: #000;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 900;
+  margin-left: 6px;
 }
 
-.modal-banner img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
+.badge-mod-global {
+  background: #3498db;
+  color: #fff;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 900;
+  margin-left: 6px;
 }
 
-.modal-meta {
-  display: flex;
-  gap: 14px;
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  margin: 12px 0 18px 0;
-}
-
-/* Perfil */
-.avatar-edit-container {
+.room-img-preview-box {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  margin: 10px 0;
+  gap: 10px;
 }
 
-.profile-preview-avatar {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  background: var(--roblox-green);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.2rem;
-  font-weight: 800;
-  color: #fff;
-  overflow: hidden;
-  border: 3px solid var(--border-color);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-.profile-preview-avatar img {
+.room-img-preview-box img {
   width: 100%;
-  height: 100%;
+  height: 120px;
   object-fit: cover;
+  border-radius: 8px;
+  background: var(--bg-input);
 }
 
-.avatar-actions {
+.room-img-buttons {
   display: flex;
   gap: 10px;
 }
 
 .btn-avatar-action {
-  background: var(--bg-card);
-  color: var(--text-main);
-  border: 1px solid var(--border-color);
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: 0.2s background;
-}
-
-.btn-avatar-action:hover {
-  background: var(--border-color);
-}
-
-.cooldown-text {
-  font-size: 0.78rem;
-  color: #ffb703;
-  margin-top: 6px;
-  line-height: 1.4;
-}
-
-.cooldown-text i {
-  margin-right: 4px;
-}
-
-#profileUsernameInput:disabled {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-muted);
-  cursor: not-allowed;
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-.mod-list-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  margin-bottom: 8px;
-}
-
-.btn-revoke-mod {
-  background: var(--danger-color);
-  color: #fff;
-  border: none;
-  font-size: 0.75rem;
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 700;
-}
-
-.banned-screen {
-  position: fixed;
-  inset: 0;
-  background: #090a0d;
-  z-index: 999999;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  flex: 1;
+  background: var(--bg-input);
+  padding: 8px;
   text-align: center;
-  padding: 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
-
-@media (max-width: 768px) {
+@media(max-width: 768px) {
   .hide-mobile {
-    display: none !important;
-  }
-
-  .roblox-nav {
-    flex-wrap: wrap;
-    padding: 10px 14px;
-    height: auto !important;
-    gap: 10px;
-  }
-
-  .nav-left {
-    flex: 1;
-    justify-content: space-between;
-  }
-
-  .nav-links {
     display: none;
   }
-
-  .nav-center {
-    order: 3;
-    width: 100%;
-    margin: 4px 0 0 0;
-    max-width: 100%;
-  }
-
-  .nav-right {
-    gap: 6px;
-  }
-
-  .nav-right .btn,
-  .btn-owner-panel {
-    padding: 6px 10px;
-    font-size: 0.75rem;
-  }
-
-  .container {
-    padding: 14px 12px;
-  }
-
-  .feed-header h1 {
-    font-size: 1.4rem;
-  }
-
-  .filter-tabs {
-    overflow-x: auto;
-    white-space: nowrap;
-    padding-bottom: 6px;
-    width: 100%;
-  }
-
-  .rooms-grid {
-    grid-template-columns: 1fr !important;
-    gap: 14px;
-  }
-
-  .chat-container {
-    position: fixed;
-    inset: 0;
-    width: 100% !important;
-    height: 100dvh !important;
-    max-height: 100dvh;
-    margin: 0 !important;
-    border-radius: 0 !important;
-    border: none;
-    z-index: 1000;
-  }
-
-  .chat-header {
-    padding: 8px 12px;
-  }
-
-  .chat-header h2 {
-    font-size: 1rem;
-    max-width: 130px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .chat-sidebar {
-    display: none !important;
-  }
-
-  .messages-area {
-    padding: 12px;
-    gap: 8px;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .chat-bubble {
-    max-width: 88% !important;
-    padding: 9px 12px;
-  }
-
-  .chat-composer-wrapper {
-    padding: 8px 10px;
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
-  }
-
-  .chat-composer-controls input {
-    font-size: 15px;
-    border-radius: 20px;
-    padding: 8px 14px;
-  }
-
-  .btn-send {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-  }
-
-  .modal-overlay {
-    align-items: flex-end;
-    padding: 0;
-  }
-
-  .modal-card {
-    border-radius: 18px 18px 0 0 !important;
-    max-height: 88vh;
-    overflow-y: auto;
-    padding: 20px 16px;
+  .search-box {
+    width: 150px;
   }
 }
