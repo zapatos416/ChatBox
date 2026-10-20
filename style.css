@@ -1,6 +1,4 @@
-/* ==================================================
-   ESTILOS GENERALES Y VARIABLES DE BLOXCHAT
-   ================================================== */
+
 :root {
   --bg-main: #121418;
   --bg-card: #1b1e26;
@@ -33,9 +31,7 @@ body {
   display: none !important;
 }
 
-/* ==================================================
-   BARRA DE NAVEGACIÓN
-   ================================================== */
+
 .roblox-nav {
   display: flex;
   justify-content: space-between;
@@ -214,9 +210,7 @@ body {
   padding: 4px;
 }
 
-/* ==================================================
-   CONTENEDOR Y CATÁLOGO DE SALAS
-   ================================================== */
+
 .container {
   max-width: 1280px;
   margin: 0 auto;
@@ -338,9 +332,7 @@ body {
   overflow: hidden;
 }
 
-/* ==================================================
-   VISTA DE CHATROOM
-   ================================================== */
+
 .chat-container {
   height: calc(100vh - 65px);
   display: flex;
@@ -612,10 +604,7 @@ body {
   font-size: 1.1rem;
 }
 
-/* ==================================================
-   MODALES Y VENTANAS EMERGENTES
-   ================================================== */
-.modal-overlay {
+
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.75);
